@@ -1,4 +1,4 @@
-import { connect, type MqttClient } from 'mqtt';
+import mqtt, { type MqttClient } from 'mqtt';
 import type { TelemetryMessage } from '../context/AppState';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'failed';
@@ -46,7 +46,7 @@ export class TelemetryMqttClient {
     this.updateStatus(this.hasEverConnected ? 'reconnecting' : 'connecting');
     this.client?.removeAllListeners();
     this.client?.end(true);
-    this.client = connect(this.url, {
+    this.client = mqtt.connect(this.url, {
       reconnectPeriod: 0,
       keepalive: 10,
       clean: true,
