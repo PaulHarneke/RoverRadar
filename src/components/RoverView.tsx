@@ -1,8 +1,8 @@
 import type { TelemetryMessage } from '../context/AppState';
 import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '../utils/telemetryMath';
 
-const ROVER_WIDTH_MM = 1210;
-const ROVER_HEIGHT_MM = 810;
+const FIELD_DIAMETER_MM = 10_000;
+const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;
 const TAG_MARKER_RADIUS = 8;
 
 interface RoverViewProps {
@@ -11,11 +11,10 @@ interface RoverViewProps {
 }
 
 export function RoverView({ telemetry, scale }: RoverViewProps) {
-  const widthPx = ROVER_WIDTH_MM / scale;
-  const heightPx = ROVER_HEIGHT_MM / scale;
-  const halfWidth = widthPx / 2;
-  const halfHeight = heightPx / 2;
-
+  const canvasWidthPx = FIELD_DIAMETER_MM / scale;
+  const canvasHeightPx = FIELD_DIAMETER_MM / scale;
+  const halfWidth = canvasWidthPx / 2;
+  const halfHeight = canvasHeightPx / 2;
   const tagPoint = telemetry
     ? polarToCartesian(telemetry.tag.distance_mm, telemetry.tag.angle_deg, scale)
     : null;
@@ -28,7 +27,7 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
       <div className="radar-canvas-wrapper">
         <svg
           className="rover-canvas"
-          viewBox={`${-halfWidth} ${-halfHeight} ${widthPx} ${heightPx}`}
+          viewBox={`${-halfWidth} ${-halfHeight} ${canvasWidthPx} ${canvasHeightPx}`}
           role="img"
           aria-label="Rover position visualization"
         >
@@ -37,13 +36,12 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
               <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
             </marker>
           </defs>
-          <rect
-            x={-halfWidth}
-            y={-halfHeight}
-            width={widthPx}
-            height={heightPx}
-            rx={12 / scale}
-            className="rover-body"
+          <circle
+            cx={0}
+            cy={0}
+            r={FIELD_RADIUS_MM / scale}
+            strokeWidth={2 / scale}
+            className="field-boundary"
           />
           <line x1={-halfWidth} y1={0} x2={halfWidth} y2={0} className="axis-line" />
           <line x1={0} y1={-halfHeight} x2={0} y2={halfHeight} className="axis-line" />

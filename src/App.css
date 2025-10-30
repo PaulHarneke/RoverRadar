@@ -25,14 +25,14 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: min(100%, calc(100vh * (1210 / 810)));
+  width: min(100%, 80vh);
   max-height: 100%;
   gap: 1.5rem;
 }
 
 .radar-canvas-wrapper {
   width: 100%;
-  aspect-ratio: 1210 / 810;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: stretch;
 }
@@ -45,10 +45,9 @@
   background: radial-gradient(circle at center, rgba(14, 122, 254, 0.12), transparent);
 }
 
-.rover-body {
-  fill: rgba(11, 28, 63, 0.8);
-  stroke: rgba(255, 255, 255, 0.6);
-  stroke-width: 2;
+.field-boundary {
+  fill: rgba(14, 122, 254, 0.08);
+  stroke: rgba(14, 122, 254, 0.35);
 }
 
 .axis-line {
