@@ -1,4 +1,7 @@
 interface ImportMetaEnv {
+  readonly MODE: string;
+  readonly DEV: boolean;
+  readonly PROD: boolean;
   readonly VITE_MQTT_WS_URL?: string;
   readonly VITE_MQTT_TOPIC?: string;
   readonly VITE_HTTP_POLL_URL?: string;
@@ -11,6 +14,7 @@ interface ImportMetaEnv {
   readonly VITE_SPEED_DANGER_MM_PER_S?: string;
   readonly VITE_MQTT_BACKOFF_INITIAL_MS?: string;
   readonly VITE_MQTT_BACKOFF_MAX_MS?: string;
+  readonly VITE_PORT?: string;
 }
 
 interface ImportMeta {

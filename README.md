@@ -26,10 +26,24 @@ npm install
 
 ### Configuration
 
-Create a `.env` file at the project root. Start from the provided example:
+Vite lädt automatisch `.env.development` im Dev-Modus und `.env.production` beim Build. Du kannst auch `.env` für gemeinsame Werte verwenden.
 
-```bash
-cp .env.example .env
+**Modus-spezifische Dateien:**
+- `.env.development` – Wird von `npm run dev` geladen
+- `.env.production` – Wird von `npm run build` verwendet
+- `.env` – Wird immer geladen (niedrigste Priorität)
+
+**Im Code unterscheiden:**
+```typescript
+if (import.meta.env.DEV) {
+  console.log('Entwicklungsmodus');
+}
+
+if (import.meta.env.PROD) {
+  console.log('Produktionsmodus');
+}
+
+console.log('Aktueller Modus:', import.meta.env.MODE);
 ```
 
 Update the values to match your Node-RED setup.
