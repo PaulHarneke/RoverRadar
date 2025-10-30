@@ -1,4 +1,4 @@
-import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '../utils/telemetryMath';
 const FIELD_DIAMETER_MM = 10000;
 const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;

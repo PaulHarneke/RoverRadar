@@ -7,8 +7,8 @@ export function polarToCartesian(distanceMm: number, angleDeg: number, mmPerPx: 
   const radians = (angleDeg * Math.PI) / 180;
   const radiusPx = distanceMm / mmPerPx;
   return {
-    x: Math.cos(radians) * radiusPx,
-    y: Math.sin(radians) * radiusPx
+    x: Math.sin(radians) * radiusPx,
+    y: -Math.cos(radians) * radiusPx
   };
 }
 
@@ -30,7 +30,11 @@ export function calculateAngleLabel(angleDeg: number): string {
   if (!Number.isFinite(angleDeg)) {
     return '—';
   }
-  return `${angleDeg.toFixed(1)}°`;
+  let normalized = angleDeg % 360;
+  if (normalized < 0) {
+    normalized += 360;
+  }
+  return `${normalized.toFixed(1)}°`;
 }
 
 export function normalizeAngle(angleDeg: number): number {
