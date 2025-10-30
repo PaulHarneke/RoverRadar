@@ -15,22 +15,14 @@ export function RoverView({ telemetry, scale }) {
         : null;
     const labelDistance = telemetry ? calculateDistanceLabel(telemetry.tag.distance_mm) : '—';
     const labelAngle = telemetry ? calculateAngleLabel(telemetry.tag.angle_deg) : '—';
-    return (_jsx("div", { className: "rover-view", children: _jsx("div", { className: "radar-canvas-wrapper", children: _jsxs("svg", { className: "rover-canvas", viewBox: `${-halfWidth} ${-halfHeight} ${canvasWidthPx} ${canvasHeightPx}`, role: "img", "aria-label": "Rover position visualization", children: [
-        _jsx("circle", { cx: 0, cy: 0, r: FIELD_RADIUS_MM / scale, strokeWidth: 2 / scale, className: "field-boundary" }),
-        _jsx("g", { className: "range-rings", children: RANGE_RING_STEPS.map((step) => {
+    return (_jsx("div", { className: "rover-view", children: _jsx("div", { className: "radar-canvas-wrapper", children: _jsxs("svg", { className: "rover-canvas", viewBox: `${-halfWidth} ${-halfHeight} ${canvasWidthPx} ${canvasHeightPx}`, role: "img", "aria-label": "Rover position visualization", children: [_jsx("circle", { cx: 0, cy: 0, r: FIELD_RADIUS_MM / scale, strokeWidth: 2 / scale, className: "field-boundary" }), _jsx("g", { className: "range-rings", children: RANGE_RING_STEPS.map((step) => {
                             const ringRadius = (FIELD_RADIUS_MM * step) / scale;
                             const distanceLabel = calculateDistanceLabel(FIELD_RADIUS_MM * step);
                             return (_jsxs("g", { children: [_jsx("circle", { cx: 0, cy: 0, r: ringRadius, className: "range-ring" }), _jsx("text", { x: 0, y: -ringRadius, className: "range-label", textAnchor: "middle", dominantBaseline: "text-after-edge", children: distanceLabel })] }, step));
-                        }) }),
-        _jsx("g", { className: "angle-guides", children: ANGLE_MARKERS.map((angle) => {
+                        }) }), _jsx("g", { className: "angle-guides", children: ANGLE_MARKERS.map((angle) => {
                             const lineEnd = polarToCartesian(FIELD_RADIUS_MM, angle, scale);
                             const labelPoint = polarToCartesian(FIELD_RADIUS_MM + 350, angle, scale);
                             const angleLabel = angle === 0 ? '0° / 360°' : `${angle}°`;
                             return (_jsxs("g", { children: [_jsx("line", { x1: 0, y1: 0, x2: lineEnd.x, y2: lineEnd.y, className: "axis-line" }), _jsx("text", { x: labelPoint.x, y: labelPoint.y, className: "angle-label", textAnchor: "middle", dominantBaseline: "middle", children: angleLabel })] }, angle));
-                        }) }),
-        tagPoint ? (_jsxs(_Fragment, { children: [
-            _jsx("line", { x1: 0, y1: 0, x2: tagPoint.x, y2: tagPoint.y, className: "tag-line" }),
-            _jsx("circle", { cx: tagPoint.x, cy: tagPoint.y, r: TAG_MARKER_RADIUS / scale, className: "tag-point" }),
-            _jsx("text", { x: tagPoint.x, y: tagPoint.y - 220 / scale, className: "tag-readout", textAnchor: "middle", dominantBaseline: "text-after-edge", children: `${labelDistance} | ${labelAngle}` })
-        ] })) : null] }) }) }));
+                        }) }), tagPoint ? (_jsxs(_Fragment, { children: [_jsx("line", { x1: 0, y1: 0, x2: tagPoint.x, y2: tagPoint.y, className: "tag-line" }), _jsx("circle", { cx: tagPoint.x, cy: tagPoint.y, r: TAG_MARKER_RADIUS / scale, className: "tag-point" }), _jsx("text", { x: tagPoint.x, y: tagPoint.y - 220 / scale, className: "tag-readout", textAnchor: "middle", dominantBaseline: "text-after-edge", children: `${labelDistance} • ${labelAngle}` })] })) : null] }) }) }));
 }
