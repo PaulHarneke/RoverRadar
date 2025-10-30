@@ -3,7 +3,9 @@ import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '.
 
 const FIELD_DIAMETER_MM = 10_000;
 const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;
-const TAG_MARKER_RADIUS = 8;
+const TAG_MARKER_RADIUS = 14;
+const RANGE_RING_STEPS = [0.25, 0.5, 0.75];
+const ANGLE_MARKERS = [0, 90, 180, 270];
 
 interface RoverViewProps {
   telemetry: TelemetryMessage | null;
@@ -43,25 +45,63 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
             strokeWidth={2 / scale}
             className="field-boundary"
           />
-          <line x1={-halfWidth} y1={0} x2={halfWidth} y2={0} className="axis-line" />
-          <line x1={0} y1={-halfHeight} x2={0} y2={halfHeight} className="axis-line" />
+          <g className="range-rings">
+            {RANGE_RING_STEPS.map((step) => {
+              const ringRadius = (FIELD_RADIUS_MM * step) / scale;
+              const distanceLabel = calculateDistanceLabel(FIELD_RADIUS_MM * step);
+              return (
+                <g key={step}>
+                  <circle cx={0} cy={0} r={ringRadius} className="range-ring" />
+                  <text
+                    x={0}
+                    y={-ringRadius}
+                    className="range-label"
+                    textAnchor="middle"
+                    dominantBaseline="text-after-edge"
+                  >
+                    {distanceLabel}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+          <g className="angle-guides">
+            {ANGLE_MARKERS.map((angle) => {
+              const lineEnd = polarToCartesian(FIELD_RADIUS_MM, angle, scale);
+              const labelPoint = polarToCartesian(FIELD_RADIUS_MM + 350, angle, scale);
+              const angleLabel = angle === 0 ? '0° / 360°' : `${angle}°`;
+              return (
+                <g key={angle}>
+                  <line x1={0} y1={0} x2={lineEnd.x} y2={lineEnd.y} className="axis-line" />
+                  <text
+                    x={labelPoint.x}
+                    y={labelPoint.y}
+                    className="angle-label"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                  >
+                    {angleLabel}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
           {tagPoint ? (
             <>
               <line x1={0} y1={0} x2={tagPoint.x} y2={tagPoint.y} className="tag-line" markerEnd="url(#arrow)" />
               <circle cx={tagPoint.x} cy={tagPoint.y} r={TAG_MARKER_RADIUS / scale} className="tag-point" />
+              <text
+                x={tagPoint.x}
+                y={tagPoint.y - 220 / scale}
+                className="tag-readout"
+                textAnchor="middle"
+                dominantBaseline="text-after-edge"
+              >
+                {`${labelDistance} • ${labelAngle}`}
+              </text>
             </>
           ) : null}
         </svg>
-      </div>
-      <div className="rover-metrics">
-        <div>
-          <span className="label">Distance</span>
-          <span className="value">{labelDistance}</span>
-        </div>
-        <div>
-          <span className="label">Angle</span>
-          <span className="value">{labelAngle}</span>
-        </div>
       </div>
     </div>
   );
