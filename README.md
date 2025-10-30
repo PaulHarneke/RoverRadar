@@ -123,66 +123,119 @@ Node-RED publishes telemetry in the following JSON structure:
 
 ## Node-RED Flow Snippet
 
-Below is a simplified example flow that emits telemetry via MQTT and HTTP. Import into Node-RED and adapt as needed.
+### Beispiel Node-RED Testflow (MQTT + HTTP)
+
+Importiere den folgenden Flow (Menü > Import > Clipboard). Er erzeugt alle 500 ms Test-Telemetrie, publiziert sie per MQTT und stellt gleichzeitig einen HTTP Fallback bereit.
 
 ```json
 [
   {
-    "id": "mqtt-out",
-    "type": "mqtt out",
-    "z": "flow-id",
-    "name": "UWB Rover Telemetry",
-    "topic": "uwb/rover/telemetry",
-    "qos": "0",
-    "retain": "false",
-    "broker": "mqtt-broker-id"
+    "id": "flow_main",
+    "type": "tab",
+    "label": "Rover Telemetry Demo",
+    "disabled": false,
+    "info": ""
   },
   {
-    "id": "http-out",
-    "type": "http response",
-    "z": "flow-id",
-    "name": "Telemetry HTTP",
-    "statusCode": "200",
-    "headers": {},
-    "x": 500,
-    "y": 240,
+    "id": "inj_tick",
+    "type": "inject",
+    "z": "flow_main",
+    "name": "Tick 500ms",
+    "props": [{ "p": "payload" }],
+    "repeat": "0.5",
+    "once": true,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 140,
+    "y": 120,
+    "wires": [["fn_build"]]
+  },
+  {
+    "id": "fn_build",
+    "type": "function",
+    "z": "flow_main",
+    "name": "Build Telemetry",
+    "func": "// Zufallswerte generieren\nconst distance = 1500 + Math.random() * 1000; // 1500 - 2500 mm\nconst angle = -90 + Math.random() * 180;      // -90 bis +90°\nconst fl = 200 + Math.random() * 150;          // 200 - 350 mm/s\nconst fr = 200 + Math.random() * 150;          // 200 - 350 mm/s\n\nconst telemetry = {\n  timestamp: new Date().toISOString(),\n  tag: {\n    distance_mm: Number(distance.toFixed(1)),\n    angle_deg: Number(angle.toFixed(1))\n  },\n  drivetrain: {\n    front_left_axis_mm_per_s: Math.round(fl),\n    front_right_axis_mm_per_s: Math.round(fr)\n  }\n};\n\nflow.set('latestTelemetry', telemetry);\nmsg.payload = telemetry;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 360,
+    "y": 120,
+    "wires": [["mqtt_out"]]
+  },
+  {
+    "id": "mqtt_out",
+    "type": "mqtt out",
+    "z": "flow_main",
+    "name": "Publish Telemetry",
+    "topic": "uwb/rover/telemetry",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correlationData": "",
+    "expiry": "",
+    "broker": "broker_local",
+    "x": 600,
+    "y": 120,
     "wires": []
-  }
-]
-```
-
-## Embed Mode & `postMessage`
-
-Append `?embed=1` to the application URL to activate the iframe-friendly layout. When embedded, the host page can control the UI via `window.postMessage`:
-
-```js
-iFrameEl.contentWindow.postMessage({ setTheme: 'dark' }, 'https://rover-hmi.example');
-iFrameEl.contentWindow.postMessage({ setScale: 1.5 }, 'https://rover-hmi.example');
-iFrameEl.contentWindow.postMessage({ forceRedraw: true }, 'https://rover-hmi.example');
-```
-
-Ensure the host origin is listed in `VITE_IFRAME_ALLOWED_ORIGINS` or use `*` for development.
-
-### Example iframe Integration
-
-```html
-<iframe
-  src="https://telemetry.example.com/?embed=1"
-  title="Rover UWB Telemetry"
-  width="100%"
-  height="420"
-  style="border:0;"
-  allow="clipboard-write"
-></iframe>
-```
-
-## Troubleshooting
-
-- **No telemetry shown** – Confirm the MQTT broker is reachable via WebSocket and that `VITE_MQTT_TOPIC` is correct. Check browser DevTools for network errors.
-- **CORS / origin errors** – When embedding, ensure the iframe origin is listed in `VITE_IFRAME_ALLOWED_ORIGINS`. The HTTP fallback endpoint must also permit cross-origin requests.
-- **Connection flapping** – Tune `VITE_MQTT_BACKOFF_INITIAL_MS` and `VITE_MQTT_BACKOFF_MAX_MS` based on network stability. The UI indicates reconnect attempts in the status bar.
-- **Slow updates** – Verify Node-RED publish interval and ensure the browser receives MQTT packets. The HTTP fallback interval can be adjusted if necessary.
-
-## License
-
-[MIT](./LICENSE)
+  },
+  {
+    "id": "http_in",
+    "type": "http in",
+    "z": "flow_main",
+    "name": "HTTP GET /uwb/rover/telemetry",
+    "url": "/uwb/rover/telemetry",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 180,
+    "y": 220,
+    "wires": [["fn_latest"]]
+  },
+  {
+    "id": "fn_latest",
+    "type": "function",
+    "z": "flow_main",
+    "name": "Read Latest",
+    "func": "msg.payload = flow.get('latestTelemetry') || null;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 390,
+    "y": 220,
+    "wires": [["http_resp"]]
+  },
+  {
+    "id": "http_resp",
+    "type": "http response",
+    "z": "flow_main",
+    "name": "Respond JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 600,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "broker_local",
+    "type": "mqtt-broker",
+    "name": "Local Broker",
+    "broker": "localhost",
+    "port": "1883",
+    "clientid": "node-red-rover",
+    "usetls": false,
+    "protocolVersion": "5",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
