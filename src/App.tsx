@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { ChangeEvent } from 'react';
 import { AppStateProvider, useAppState } from './context/AppState';
 import { RoverView } from './components/RoverView';
 import { TelemetryPanel } from './components/TelemetryPanel';
@@ -31,13 +32,20 @@ function AppContent() {
                 max={MAX_SCALE}
                 step={0.1}
                 value={safeScale}
-                onChange={(event) => setScale(Number(event.target.value))}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setScale(Number(event.target.value))
+                }
               />
               <span className="value">{safeScale.toFixed(2)}</span>
             </label>
             <label className="theme-toggle">
               <span>Theme</span>
-              <select value={theme} onChange={(event) => setTheme(event.target.value as 'light' | 'dark')}>
+              <select
+                value={theme}
+                onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                  setTheme(event.target.value as 'light' | 'dark')
+                }
+              >
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
               </select>

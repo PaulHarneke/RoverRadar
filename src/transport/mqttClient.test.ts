@@ -1,9 +1,6 @@
 import { EventEmitter } from 'events';
+import type { MqttClient } from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-declare module 'mqtt' {
-  interface MqttClient extends EventEmitter {}
-}
 
 const connectMock = vi.fn();
 
@@ -36,7 +33,7 @@ describe('TelemetryMqttClient reconnect logic', () => {
   });
 
   it('retries with exponential backoff when the connection closes', async () => {
-    connectMock.mockImplementation(() => new MockMqttClient());
+    connectMock.mockImplementation(() => new MockMqttClient() as unknown as MqttClient);
     const { createTelemetryMqttClient } = await import('./mqttClient');
 
     const statusSpy = vi.fn();

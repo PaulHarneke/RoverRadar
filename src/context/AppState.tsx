@@ -130,7 +130,7 @@ export function AppStateProvider({ children }: ProviderProps) {
       }
 
       if ('forceRedraw' in event.data) {
-        setRefreshTick((tick) => tick + 1);
+        setRefreshTick((tick: number) => tick + 1);
       }
     };
 
@@ -146,7 +146,7 @@ export function AppStateProvider({ children }: ProviderProps) {
   }, []);
 
   const forceRedraw = useCallback(() => {
-    setRefreshTick((tick) => tick + 1);
+    setRefreshTick((tick: number) => tick + 1);
   }, []);
 
   const value = useMemo<AppStateValue>(

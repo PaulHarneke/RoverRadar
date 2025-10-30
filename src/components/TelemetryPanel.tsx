@@ -33,11 +33,17 @@ export function TelemetryPanel({ telemetry }: TelemetryPanelProps) {
       <dl>
         <div>
           <dt>Distance</dt>
-          <dd>{Number.isFinite(distance) ? `${distance.toFixed(0)} mm` : '—'}</dd>
+          <dd>
+            {typeof distance === 'number' && Number.isFinite(distance)
+              ? `${distance.toFixed(0)} mm`
+              : '—'}
+          </dd>
         </div>
         <div>
           <dt>Angle</dt>
-          <dd>{Number.isFinite(angle) ? `${angle.toFixed(1)}°` : '—'}</dd>
+          <dd>
+            {typeof angle === 'number' && Number.isFinite(angle) ? `${angle.toFixed(1)}°` : '—'}
+          </dd>
         </div>
         <div className={`metric metric-${classifySpeed(leftSpeed)}`}>
           <dt>Front left speed</dt>
