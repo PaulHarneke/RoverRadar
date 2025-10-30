@@ -63,6 +63,26 @@ Update the values to match your Node-RED setup.
 | `VITE_HTTP_POLL_URL` | (Optional) Node-RED HTTP endpoint for telemetry polling |
 | `VITE_HTTP_POLL_INTERVAL_MS` | Polling interval when HTTP fallback is enabled |
 
+### Node-RED Kommunikation konfigurieren
+
+Setze/verändere in `.env.development` (Dev) bzw. `.env.production` (Build):
+
+```bash
+VITE_MQTT_WS_URL=ws://localhost:9001          # WebSocket Endpoint des Brokers (Node-RED/Mosquitto)
+VITE_MQTT_TOPIC=uwb/rover/telemetry           # Telemetrie-Topic
+VITE_MQTT_BACKOFF_INITIAL_MS=500              # Erster Reconnect-Delay
+VITE_MQTT_BACKOFF_MAX_MS=8000                 # Max. Reconnect-Delay
+VITE_HTTP_POLL_URL=http://localhost:1880/uwb/rover/telemetry   # (Optional) HTTP Fallback
+VITE_HTTP_POLL_INTERVAL_MS=250                # Poll-Intervall in ms
+VITE_IFRAME_ALLOWED_ORIGINS=http://localhost:1880
+```
+
+Wechsel der Modi:
+- Dev: `npm run dev` (lädt `.env.development`)
+- Prod Preview: `npm run build && npm run preview` (nutzt `.env.production`)
+- Gemeinsame Defaults: `.env`
+- Zugriff im Code: `import.meta.env.VITE_MQTT_WS_URL` etc.
+
 ### Development Server
 
 ```bash
