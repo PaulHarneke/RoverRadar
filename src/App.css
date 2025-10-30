@@ -1,0 +1,245 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, rgba(14, 122, 254, 0.08), transparent);
+  color: inherit;
+}
+
+.main {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  padding: 0 1rem 1rem;
+  flex-wrap: wrap;
+}
+
+.panel {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(11, 28, 63, 0.1);
+  backdrop-filter: blur(6px);
+}
+
+.settings-panel {
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settings-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.settings-panel input[type='range'] {
+  width: 100%;
+}
+
+.settings-panel .value {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 500;
+}
+
+.telemetry-panel {
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.telemetry-panel dl {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.telemetry-panel dt {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.telemetry-panel dd {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.metric {
+  border-radius: 8px;
+  padding: 0.5rem;
+  background: rgba(11, 28, 63, 0.05);
+}
+
+.metric-ok {
+  border-left: 4px solid #22c55e;
+}
+
+.metric-warn {
+  border-left: 4px solid #facc15;
+  background: rgba(250, 204, 21, 0.15);
+}
+
+.metric-danger {
+  border-left: 4px solid #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.rover-view {
+  position: relative;
+  max-width: 70vw;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rover-canvas {
+  width: min(70vw, 700px);
+  height: min(60vh, 520px);
+  border-radius: 12px;
+  border: 1px solid rgba(11, 28, 63, 0.08);
+  background: radial-gradient(circle at center, rgba(14, 122, 254, 0.12), transparent);
+}
+
+.rover-body {
+  fill: rgba(11, 28, 63, 0.8);
+  stroke: rgba(255, 255, 255, 0.6);
+  stroke-width: 2;
+}
+
+.axis-line {
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 1;
+  stroke-dasharray: 6 6;
+}
+
+.tag-line {
+  stroke: #0e7afe;
+  stroke-width: 3;
+}
+
+.tag-point {
+  fill: #ef4444;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.rover-metrics {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.rover-metrics .label {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.rover-metrics .value {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.status-bar {
+  margin-top: auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-top: 1px solid rgba(11, 28, 63, 0.08);
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.status-label {
+  opacity: 0.6;
+}
+
+.status-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-connected {
+  background-color: #22c55e;
+}
+
+.status-reconnecting {
+  background: repeating-conic-gradient(from 0deg, #facc15 0 30deg, rgba(250, 204, 21, 0.4) 30deg 60deg);
+  animation: spin 2s linear infinite;
+}
+
+.status-failed {
+  background-color: #ef4444;
+}
+
+.status-disconnected {
+  background-color: rgba(11, 28, 63, 0.25);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 960px) {
+  .controls {
+    flex-direction: column;
+  }
+
+  .rover-view {
+    max-width: 100%;
+  }
+}
+
+.embed-mode .controls,
+.embed-mode .settings-panel {
+  display: none;
+}
+
+.embed-mode .panel {
+  background: transparent;
+  box-shadow: none;
+  padding: 0.5rem 1rem;
+}
+
+.embed-mode .telemetry-panel {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.embed-mode .telemetry-panel dl {
+  display: flex;
+  gap: 1rem;
+}
+
+.embed-mode .telemetry-panel dl > div {
+  min-width: 120px;
+}
