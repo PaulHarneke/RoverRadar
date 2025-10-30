@@ -23,7 +23,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: min(82vh, 82vw);
+  width: min(100%, 80vh);
   max-height: 100%;
   gap: 2rem;
 }
@@ -66,9 +66,8 @@
 }
 
 .field-boundary {
-  fill: rgba(0, 255, 156, 0.05);
-  stroke: rgba(0, 255, 156, 0.35);
-  stroke-width: 2;
+  fill: rgba(14, 122, 254, 0.08);
+  stroke: rgba(14, 122, 254, 0.35);
 }
 
 .range-ring {
