@@ -108,9 +108,12 @@
 }
 
 .tag-point {
-  fill: #ff3b3b;
+  fill: #00ff9c;
   stroke: rgba(207, 255, 239, 0.9);
   stroke-width: 6;
+  filter: drop-shadow(0 0 18px rgba(0, 255, 156, 0.55));
+  animation: tagBlink 1s ease-in-out infinite;
+  transform-origin: center;
 }
 
 .tag-readout {
@@ -118,6 +121,55 @@
   font-size: 52px;
   letter-spacing: 4px;
   text-transform: uppercase;
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.85));
+}
+
+@keyframes tagBlink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tag-point {
+    animation: none;
+  }
+}
+
+.hud-readouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.9rem;
+  width: 100%;
+}
+
+.readout-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(0, 255, 156, 0.28);
+  background: linear-gradient(180deg, rgba(9, 18, 15, 0.9) 0%, rgba(6, 12, 10, 0.95) 100%);
+  box-shadow: inset 0 0 18px rgba(0, 255, 156, 0.16);
+}
+
+.readout-label {
+  font-size: 0.68rem;
+  letter-spacing: 3px;
+  color: rgba(138, 215, 190, 0.65);
+}
+
+.readout-value {
+  font-size: 1.65rem;
+  letter-spacing: 2px;
+  color: #00ff9c;
+  text-shadow: 0 0 14px rgba(0, 255, 156, 0.35);
 }
 
 @keyframes radarSweep {
