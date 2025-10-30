@@ -23,9 +23,20 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
 
   const labelDistance = telemetry ? calculateDistanceLabel(telemetry.tag.distance_mm) : '—';
   const labelAngle = telemetry ? calculateAngleLabel(telemetry.tag.angle_deg) : '—';
+  const normalizedAngle = ((telemetry?.tag.angle_deg ?? 0) % 360 + 360) % 360;
+  const bearingPosition = `${(normalizedAngle / 360) * 100}%`;
+  const statusLabel = telemetry ? 'LOCKED' : 'SCANNING';
 
   return (
     <div className="rover-view">
+      <div className="bearing-strip" aria-hidden="true">
+        <div className="bearing-strip__label">BEARING</div>
+        <div className="bearing-strip__scale">
+          <div className="bearing-strip__pointer" style={{ left: bearingPosition }} />
+          <div className="bearing-strip__ticks" />
+        </div>
+        <div className={`status-pill status-pill--${telemetry ? 'connected' : 'searching'}`}>{statusLabel}</div>
+      </div>
       <div className="radar-canvas-wrapper">
         <svg
           className="rover-canvas"
@@ -97,6 +108,20 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
             </>
           ) : null}
         </svg>
+      </div>
+      <div className="hud-readouts" role="presentation">
+        <div className="readout-group">
+          <span className="readout-label">RANGE</span>
+          <span className="readout-value">{labelDistance}</span>
+        </div>
+        <div className="readout-group">
+          <span className="readout-label">BEARING</span>
+          <span className="readout-value">{labelAngle}</span>
+        </div>
+        <div className="readout-group">
+          <span className="readout-label">CONTACT</span>
+          <span className="readout-value">{telemetry ? 'TRACK-01' : '—'}</span>
+        </div>
       </div>
     </div>
   );
