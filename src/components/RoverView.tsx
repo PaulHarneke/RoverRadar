@@ -3,8 +3,6 @@ import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '.
 
 const FIELD_DIAMETER_MM = 10_000;
 const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;
-const ROVER_WIDTH_MM = 1210;
-const ROVER_HEIGHT_MM = 810;
 const TAG_MARKER_RADIUS = 8;
 
 interface RoverViewProps {
@@ -17,9 +15,6 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
   const canvasHeightPx = FIELD_DIAMETER_MM / scale;
   const halfWidth = canvasWidthPx / 2;
   const halfHeight = canvasHeightPx / 2;
-  const roverWidthPx = ROVER_WIDTH_MM / scale;
-  const roverHeightPx = ROVER_HEIGHT_MM / scale;
-
   const tagPoint = telemetry
     ? polarToCartesian(telemetry.tag.distance_mm, telemetry.tag.angle_deg, scale)
     : null;
@@ -47,14 +42,6 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
             r={FIELD_RADIUS_MM / scale}
             strokeWidth={2 / scale}
             className="field-boundary"
-          />
-          <rect
-            x={-roverWidthPx / 2}
-            y={-roverHeightPx / 2}
-            width={roverWidthPx}
-            height={roverHeightPx}
-            rx={12 / scale}
-            className="rover-body"
           />
           <line x1={-halfWidth} y1={0} x2={halfWidth} y2={0} className="axis-line" />
           <line x1={0} y1={-halfHeight} x2={0} y2={halfHeight} className="axis-line" />
