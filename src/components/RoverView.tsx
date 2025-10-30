@@ -1,6 +1,8 @@
 import type { TelemetryMessage } from '../context/AppState';
 import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '../utils/telemetryMath';
 
+const FIELD_DIAMETER_MM = 10_000;
+const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;
 const ROVER_WIDTH_MM = 1210;
 const ROVER_HEIGHT_MM = 810;
 const TAG_MARKER_RADIUS = 8;
@@ -11,10 +13,12 @@ interface RoverViewProps {
 }
 
 export function RoverView({ telemetry, scale }: RoverViewProps) {
-  const widthPx = ROVER_WIDTH_MM / scale;
-  const heightPx = ROVER_HEIGHT_MM / scale;
-  const halfWidth = widthPx / 2;
-  const halfHeight = heightPx / 2;
+  const canvasWidthPx = FIELD_DIAMETER_MM / scale;
+  const canvasHeightPx = FIELD_DIAMETER_MM / scale;
+  const halfWidth = canvasWidthPx / 2;
+  const halfHeight = canvasHeightPx / 2;
+  const roverWidthPx = ROVER_WIDTH_MM / scale;
+  const roverHeightPx = ROVER_HEIGHT_MM / scale;
 
   const tagPoint = telemetry
     ? polarToCartesian(telemetry.tag.distance_mm, telemetry.tag.angle_deg, scale)
@@ -28,7 +32,7 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
       <div className="radar-canvas-wrapper">
         <svg
           className="rover-canvas"
-          viewBox={`${-halfWidth} ${-halfHeight} ${widthPx} ${heightPx}`}
+          viewBox={`${-halfWidth} ${-halfHeight} ${canvasWidthPx} ${canvasHeightPx}`}
           role="img"
           aria-label="Rover position visualization"
         >
@@ -37,11 +41,18 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
               <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
             </marker>
           </defs>
+          <circle
+            cx={0}
+            cy={0}
+            r={FIELD_RADIUS_MM / scale}
+            strokeWidth={2 / scale}
+            className="field-boundary"
+          />
           <rect
-            x={-halfWidth}
-            y={-halfHeight}
-            width={widthPx}
-            height={heightPx}
+            x={-roverWidthPx / 2}
+            y={-roverHeightPx / 2}
+            width={roverWidthPx}
+            height={roverHeightPx}
             rx={12 / scale}
             className="rover-body"
           />
