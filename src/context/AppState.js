@@ -26,6 +26,11 @@ export function AppStateProvider({ children }) {
         document.body.classList.toggle('dark', theme === 'dark');
     }, [theme]);
     useEffect(() => {
+        if (import.meta.env.DEV) {
+            console.log('[DEV] MQTT URL:', MQTT_URL);
+            console.log('[DEV] MQTT Topic:', MQTT_TOPIC);
+            console.log('[DEV] HTTP Fallback:', HTTP_POLL_URL);
+        }
         if (!MQTT_URL || !MQTT_TOPIC) {
             setConnectionStatus('failed');
             return;

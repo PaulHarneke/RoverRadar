@@ -3,7 +3,7 @@
   line-height: 1.5;
   font-weight: 400;
   color: #0b1c3f;
-  background-color: #f3f6ff;
+  background-color: transparent;
   color-scheme: light dark;
 }
 
@@ -14,7 +14,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: inherit;
+  background: transparent;
 }
 
 #root {
@@ -24,7 +24,7 @@ body {
 
 body.dark {
   color: #f7f9ff;
-  background-color: #0b1c3f;
+  background-color: transparent;
 }
 
 body.dark .panel {
