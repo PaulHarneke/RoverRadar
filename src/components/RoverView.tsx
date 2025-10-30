@@ -94,7 +94,6 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
           </g>
           {tagPoint ? (
             <>
-              <line x1={0} y1={0} x2={tagPoint.x} y2={tagPoint.y} className="tag-line" />
               <circle cx={tagPoint.x} cy={tagPoint.y} r={TAG_MARKER_RADIUS / scale} className="tag-point" />
               <text
                 x={tagPoint.x}
