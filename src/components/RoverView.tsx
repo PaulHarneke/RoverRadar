@@ -3,7 +3,7 @@ import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '.
 
 const FIELD_DIAMETER_MM = 10_000;
 const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;
-const TAG_MARKER_RADIUS = 14;
+const TAG_MARKER_RADIUS = Number(import.meta.env.VITE_TAG_MARKER_RADIUS ?? '100');
 const RANGE_RING_STEPS = [0.25, 0.5, 0.75];
 const ANGLE_MARKERS = [0, 90, 180, 270];
 
@@ -33,11 +33,6 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
           role="img"
           aria-label="Rover position visualization"
         >
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
-            </marker>
-          </defs>
           <circle
             cx={0}
             cy={0}
@@ -88,7 +83,7 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
           </g>
           {tagPoint ? (
             <>
-              <line x1={0} y1={0} x2={tagPoint.x} y2={tagPoint.y} className="tag-line" markerEnd="url(#arrow)" />
+              <line x1={0} y1={0} x2={tagPoint.x} y2={tagPoint.y} className="tag-line" />
               <circle cx={tagPoint.x} cy={tagPoint.y} r={TAG_MARKER_RADIUS / scale} className="tag-point" />
               <text
                 x={tagPoint.x}

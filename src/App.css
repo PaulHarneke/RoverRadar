@@ -51,27 +51,27 @@
 
 .range-ring {
   fill: none;
-  stroke: rgba(14, 122, 254, 0.22);
-  stroke-width: 1;
+  stroke: rgba(45, 46, 48, 0.829);
+  stroke-width: 2;
   stroke-dasharray: 6 6;
 }
 
 .range-label {
-  fill: rgba(255, 255, 255, 0.75);
-  font-size: 32px;
+  fill: #000;
+  font-size: 64px;
   font-weight: 500;
   letter-spacing: 1px;
 }
 
 .angle-guides .axis-line {
-  stroke: rgba(255, 255, 255, 0.28);
+  stroke: #000;
   stroke-width: 1;
   stroke-dasharray: 4 8;
 }
 
 .angle-label {
-  fill: rgba(255, 255, 255, 0.8);
-  font-size: 34px;
+  fill: #000;
+  font-size: 64px;
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -84,12 +84,12 @@
 .tag-point {
   fill: #ef4444;
   stroke: #fff;
-  stroke-width: 40;
+  stroke-width: 2;
 }
 
 .tag-readout {
-  fill: #ffffff;
-  font-size: 36px;
+  fill: #000;
+  font-size: 64px;
   font-weight: 600;
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
 }
