@@ -69,7 +69,7 @@ Update the values to match your Node-RED setup.
 npm run dev
 ```
 
-Open http://localhost:5173/ to view the UI. The development server automatically reloads when files change.
+Open http://localhost:5000/ to view the UI. The development server automatically reloads when files change.
 
 ### Production Build
 
@@ -94,6 +94,17 @@ Unit tests are powered by Vitest + Testing Library.
 ```bash
 npm test
 ```
+
+### Wechsel zwischen Development und Production
+
+- Development-Modus: `npm run dev` (lädt `.env.development`)
+- Production-Build: `npm run build` (verwendet `.env.production`)
+- Produktion lokal testen: `npm run preview`
+- Port festlegen: `VITE_PORT` in jeweiliger `.env.*` Datei (hier 5000)
+- Gemeinsame Basiswerte optional in `.env` (niedrigste Priorität)
+- Unterschied im Code erkennbar über `import.meta.env.DEV` / `import.meta.env.PROD`
+
+Für tatsächliches Deployment: Inhalte aus `dist/` mit einem beliebigen Static File Server oder Reverse Proxy ausliefern.
 
 ## Telemetry Contract
 
