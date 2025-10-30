@@ -45,6 +45,11 @@
   background: radial-gradient(circle at center, rgba(14, 122, 254, 0.12), transparent);
 }
 
+.field-boundary {
+  fill: rgba(14, 122, 254, 0.08);
+  stroke: rgba(14, 122, 254, 0.35);
+}
+
 .rover-body {
   fill: rgba(11, 28, 63, 0.8);
   stroke: rgba(255, 255, 255, 0.6);
