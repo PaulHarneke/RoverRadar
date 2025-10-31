@@ -55,6 +55,20 @@ node ../scripts/ensure-dev-cert.mjs
 
 Script regeneriert automatisch wenn ein Mismatch erkannt wird (ab aktualisierter Version).
 
+### Erneute Erzeugung erzwingen
+
+Setze die Umgebungsvariable:
+
+```bash
+REGENERATE_DEV_CERT=1 npm run dev:https
+```
+
+Das Script erzeugt immer neue Dateien, selbst wenn die alten gültig waren.
+
+### Fingerprint Debug
+
+Bei erfolgreichem Match loggt das Script einen gekürzten SHA256 SPKI Fingerprint von Key & Cert. Bei Problemen (Mismatch) werden ausführliche Debug-Ausgaben generiert.
+
 ## Node Version Hinweis
 
 Bei Node >= 22 gab es Probleme mit TLS/WebSocket Upgrade ("shouldUpgradeCallback"). Für lokale HTTPS-Entwicklung ggf. Node 20 LTS verwenden. Das Script gibt eine Warnung aus falls eine neuere Major-Version erkannt wird.

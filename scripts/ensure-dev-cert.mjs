@@ -9,6 +9,7 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
 import path from 'path';
+import crypto from 'crypto';
 
 const certDir = path.resolve('cert');
 const keyPath = path.join(certDir, 'dev.key');
@@ -54,24 +55,67 @@ function extractModulusWithOpenssl(pem, type) {
   }
 }
 
+function fingerprintPublicKeyFromCert(certPem) {
+  try {
+    const x509 = crypto.X509Certificate.fromPEM(certPem);
+    const derPub = x509.publicKey.export({ type: 'spki', format: 'der' });
+    return crypto.createHash('sha256').update(derPub).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
+function fingerprintPublicKeyFromKey(keyPem) {
+  try {
+    const keyObj = crypto.createPrivateKey(keyPem);
+    const pub = crypto.createPublicKey(keyObj).export({ type: 'spki', format: 'der' });
+    return crypto.createHash('sha256').update(pub).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
 function keyCertMatch() {
   if (!existsSync(keyPath) || !existsSync(crtPath)) return false;
-  // Fast path: if no openssl available, assume ok (old behavior)
-  if (!have('openssl')) return true;
   const keyPem = readPem(keyPath);
   const crtPem = readPem(crtPath);
   if (!keyPem || !crtPem) return false;
-  const keyMod = extractModulusWithOpenssl(keyPem, 'rsa');
-  const crtMod = extractModulusWithOpenssl(crtPem, 'x509');
-  if (!keyMod || !crtMod) return false;
-  const match = keyMod === crtMod;
+
+  // Prefer OpenSSL modulus comparison if available for consistency
+  if (have('openssl')) {
+    const keyMod = extractModulusWithOpenssl(keyPem, 'rsa');
+    const crtMod = extractModulusWithOpenssl(crtPem, 'x509');
+    if (keyMod && crtMod) {
+      const match = keyMod === crtMod;
+      if (!match) {
+        log('Modulus mismatch erkannt (openssl).');
+      }
+      return match;
+    }
+  }
+  // Fallback: compare public key fingerprints via Node crypto.
+  const fpKey = fingerprintPublicKeyFromKey(keyPem);
+  const fpCert = fingerprintPublicKeyFromCert(crtPem);
+  if (!fpKey || !fpCert) return false;
+  const match = fpKey === fpCert;
   if (!match) {
-    log('Gefundene dev.key und dev.crt passen NICHT zusammen (Modulus mismatch).');
+    log('Fingerprint mismatch erkannt (Node crypto).');
   }
   return match;
 }
 
-if (existsSync(keyPath) && existsSync(crtPath) && keyCertMatch()) {
+const force = process.env.REGENERATE_DEV_CERT === '1';
+if (force) {
+  log('Erzwungene Regeneration wegen REGENERATE_DEV_CERT=1.');
+}
+if (!force && existsSync(keyPath) && existsSync(crtPath) && keyCertMatch()) {
+  const keyPemDbg = readPem(keyPath);
+  const crtPemDbg = readPem(crtPath);
+  const fpKeyDbg = fingerprintPublicKeyFromKey(keyPemDbg);
+  const fpCertDbg = fingerprintPublicKeyFromCert(crtPemDbg);
+  if (fpKeyDbg && fpCertDbg) {
+    log(`Fingerprints (SHA256 SPKI) key=${fpKeyDbg.substring(0,16)}… cert=${fpCertDbg.substring(0,16)}…`);
+  }
   log('Zertifikatsdateien vorhanden & stimmen überein – nichts zu tun.');
   process.exit(0);
 }
@@ -122,8 +166,10 @@ function createSelfSignedFallback() {
   log('Zertifikat via selfsigned erstellt.');
 }
 
-if (existsSync(keyPath) && existsSync(crtPath)) {
-  log('Regeneriere Dev-Zertifikat wegen fehlender Dateien oder Mismatch ...');
+if (existsSync(keyPath) && existsSync(crtPath) && !force) {
+  log('Regeneriere Dev-Zertifikat wegen Mismatch ...');
+} else if (force) {
+  log('Regeneriere Dev-Zertifikat (force) ...');
 } else {
   log('Erzeuge Dev-Zertifikat (gültig 365 Tage) ...');
 }
