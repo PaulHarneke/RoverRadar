@@ -3,7 +3,7 @@ import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '.
 
 const FIELD_DIAMETER_MM = 10_000;
 const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;
-const TAG_MARKER_RADIUS = 8;
+const TAG_MARKER_RADIUS = 14;
 // Radar ring steps (fractions of FIELD_RADIUS_MM)
 const RANGE_RING_STEPS: number[] = [0.25, 0.5, 0.75, 1];
 // Cardinal / intercardinal angle guides (degrees)
@@ -22,23 +22,11 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
   const tagPoint = telemetry
     ? polarToCartesian(telemetry.tag.distance_mm, telemetry.tag.angle_deg, scale)
     : null;
-
-  const labelDistance = telemetry ? calculateDistanceLabel(telemetry.tag.distance_mm) : '—';
-  const labelAngle = telemetry ? calculateAngleLabel(telemetry.tag.angle_deg) : '—';
-  const normalizedAngle = ((telemetry?.tag.angle_deg ?? 0) % 360 + 360) % 360;
-  const bearingPosition = `${(normalizedAngle / 360) * 100}%`;
-  const statusLabel = telemetry ? 'LOCKED' : 'SCANNING';
+  const tagDistanceLabel = telemetry ? calculateDistanceLabel(telemetry.tag.distance_mm) : null;
+  const tagAngleLabel = telemetry ? calculateAngleLabel(telemetry.tag.angle_deg) : null;
 
   return (
     <div className="rover-view">
-      <div className="bearing-strip" aria-hidden="true">
-        <div className="bearing-strip__label">BEARING</div>
-        <div className="bearing-strip__scale">
-          <div className="bearing-strip__pointer" style={{ left: bearingPosition }} />
-          <div className="bearing-strip__ticks" />
-        </div>
-        <div className={`status-pill status-pill--${telemetry ? 'connected' : 'searching'}`}>{statusLabel}</div>
-      </div>
       <div className="radar-canvas-wrapper">
         <svg
           className="rover-canvas"
@@ -46,11 +34,6 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
           role="img"
           aria-label="Rover position visualization"
         >
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
-            </marker>
-          </defs>
           <circle
             cx={0}
             cy={0}
@@ -109,25 +92,11 @@ export function RoverView({ telemetry, scale }: RoverViewProps) {
                 textAnchor="middle"
                 dominantBaseline="text-after-edge"
               >
-                {`${labelDistance} • ${labelAngle}`}
+                {tagDistanceLabel && tagAngleLabel ? `${tagDistanceLabel} • ${tagAngleLabel}` : ''}
               </text>
             </>
           ) : null}
         </svg>
-      </div>
-      <div className="hud-readouts" role="presentation">
-        <div className="readout-group">
-          <span className="readout-label">RANGE</span>
-          <span className="readout-value">{labelDistance}</span>
-        </div>
-        <div className="readout-group">
-          <span className="readout-label">BEARING</span>
-          <span className="readout-value">{labelAngle}</span>
-        </div>
-        <div className="readout-group">
-          <span className="readout-label">CONTACT</span>
-          <span className="readout-value">{telemetry ? 'TRACK-01' : '—'}</span>
-        </div>
       </div>
     </div>
   );
