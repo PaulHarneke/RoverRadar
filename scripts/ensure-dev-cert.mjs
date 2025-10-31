@@ -14,6 +14,13 @@ const certDir = path.resolve('cert');
 const keyPath = path.join(certDir, 'dev.key');
 const crtPath = path.join(certDir, 'dev.crt');
 
+// Hinweis: Bekannte Probleme mit Node >=22 bei TLS + WebSocket Upgrade ("shouldUpgradeCallback" Fehler).
+// Empfehlung: Für lokale Entwicklung Node 18 oder 20 LTS nutzen, falls HTTPS/HMR Probleme auftreten.
+const nodeMajor = Number(process.versions.node.split('.')[0]);
+if (nodeMajor >= 22) {
+  log(`Warnung: Node ${process.versions.node} erkannt. Falls beim Start TLS/HMR Fehler (shouldUpgradeCallback) auftreten, wechsle auf Node 20 LTS.`);
+}
+
 function log(msg) {
   // eslint-disable-next-line no-console
   console.log(`[dev-cert] ${msg}`);
