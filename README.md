@@ -117,6 +117,16 @@ Hinweise:
 - Self-signed Zertifikat nur für lokale Entwicklung.
 - In Produktion echte Zertifikate (z.B. Let's Encrypt) via Reverse Proxy (Caddy, Traefik, Nginx) verwenden.
 - Mixed Content vermeiden: Verwende `wss://` für `VITE_MQTT_WS_URL` und HTTPS für alle eingebetteten Ressourcen.
+- Windows Hinweis: Falls `openssl` nicht verfügbar ist, erzeugt das Script automatisch ein Fallback über das npm Paket `selfsigned`. Alternativ kannst du `mkcert` installieren.
+- mkcert Installation (Linux Beispiel):
+  ```bash
+  sudo apt install -y libnss3-tools
+  curl -L https://github.com/FiloSottile/mkcert/releases/latest/download/mkcert-v1.4.4-linux-amd64 -o mkcert
+  chmod +x mkcert
+  sudo mv mkcert /usr/local/bin/
+  mkcert -install
+  mkcert -key-file cert/dev.key -cert-file cert/dev.crt localhost
+  ```
 
 ### Production Build
 
