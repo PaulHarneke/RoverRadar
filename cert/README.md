@@ -19,6 +19,46 @@ npm run dev
 
 Browser zeigt Warnung (self-signed) -> einmal akzeptieren.
 
+## Optional: mkcert nutzen
+
+Falls `mkcert` installiert ist (empfohlen für weniger Browser-Warnungen):
+
+```bash
+mkcert -key-file dev.key -cert-file dev.crt localhost 127.0.0.1 ::1
+```
+
+Installationshinweise siehe mkcert GitHub-Repository (Root CA einmalig vertrauen).
+
+## Key/Certificate Mismatch Fehler
+
+Fehlerbild beim Start:
+
+```
+Error: error:05800074:x509 certificate routines::key values mismatch
+```
+
+Ursache: `dev.key` passt kryptografisch nicht zu `dev.crt` (Modulus unterschiedlich).
+
+### Prüfen ob Key & Cert zusammen passen
+
+```bash
+openssl rsa -noout -modulus -in dev.key | shasum
+openssl x509 -noout -modulus -in dev.crt | shasum
+```
+
+Beide Hashes müssen identisch sein. Wenn nicht:
+
+```bash
+rm dev.key dev.crt
+node ../scripts/ensure-dev-cert.mjs
+```
+
+Script regeneriert automatisch wenn ein Mismatch erkannt wird (ab aktualisierter Version).
+
+## Node Version Hinweis
+
+Bei Node >= 22 gab es Probleme mit TLS/WebSocket Upgrade ("shouldUpgradeCallback"). Für lokale HTTPS-Entwicklung ggf. Node 20 LTS verwenden. Das Script gibt eine Warnung aus falls eine neuere Major-Version erkannt wird.
+
 ## Sicherheit
 - Key nicht ins Repo für Produktion.
 - Für echte Deployments ein gültiges Zertifikat (z.B. Let's Encrypt) verwenden.
