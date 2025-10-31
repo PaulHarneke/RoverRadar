@@ -91,6 +91,33 @@ npm run dev
 
 Open http://localhost:5000/ to view the UI. The development server automatically reloads when files change.
 
+### HTTPS im Development
+
+Für eingebettete iframes in einer HTTPS-Seite muss auch der Dev-Server per HTTPS erreichbar sein (sonst Mixed-Content Block). Dieses Projekt unterstützt optional selbst-signierte Zertifikate.
+
+Schnellstart (Zertifikat erzeugen falls fehlend und HTTPS starten):
+
+```bash
+npm run dev:https
+```
+
+Das Skript `scripts/ensure-dev-cert.mjs` erzeugt bei Bedarf `cert/dev.key` und `cert/dev.crt` (self-signed) und startet Vite mit HTTPS (`VITE_HTTPS=1`). Browser zeigt einmalig eine Warnung – bestätige sie.
+
+Manuell erzeugen:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -keyout cert/dev.key -out cert/dev.crt -days 365 -subj "/CN=localhost"
+export VITE_HTTPS=1
+export VITE_SSL_KEY=cert/dev.key
+export VITE_SSL_CERT=cert/dev.crt
+npm run dev
+```
+
+Hinweise:
+- Self-signed Zertifikat nur für lokale Entwicklung.
+- In Produktion echte Zertifikate (z.B. Let's Encrypt) via Reverse Proxy (Caddy, Traefik, Nginx) verwenden.
+- Mixed Content vermeiden: Verwende `wss://` für `VITE_MQTT_WS_URL` und HTTPS für alle eingebetteten Ressourcen.
+
 ### Production Build
 
 ```bash
