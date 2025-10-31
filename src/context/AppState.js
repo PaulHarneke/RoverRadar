@@ -9,7 +9,8 @@ const MIN_SCALE = Number(import.meta.env.VITE_MIN_SCALE_MM_PER_PX ?? '0.5');
 const MAX_SCALE = Number(import.meta.env.VITE_MAX_SCALE_MM_PER_PX ?? '5');
 const MQTT_URL = import.meta.env.VITE_MQTT_WS_URL;
 const MQTT_TOPIC = import.meta.env.VITE_MQTT_TOPIC;
-const HTTP_POLL_URL = import.meta.env.VITE_HTTP_POLL_URL;
+const NODE_RED_BASE = import.meta.env.VITE_NODE_RED_BASE_URL;
+const HTTP_POLL_URL = import.meta.env.VITE_HTTP_POLL_URL ?? (NODE_RED_BASE ? `${NODE_RED_BASE.replace(/\/$/, '')}/uwb/rover/telemetry` : undefined);
 const HTTP_POLL_INTERVAL_MS = Number(import.meta.env.VITE_HTTP_POLL_INTERVAL_MS ?? '250');
 const ALLOWED_ORIGINS = import.meta.env.VITE_IFRAME_ALLOWED_ORIGINS
     ?.split(',')
@@ -30,6 +31,7 @@ export function AppStateProvider({ children }) {
             console.log('[DEV] MQTT URL:', MQTT_URL);
             console.log('[DEV] MQTT Topic:', MQTT_TOPIC);
             console.log('[DEV] HTTP Fallback:', HTTP_POLL_URL);
+            console.log('[DEV] Node-RED Base:', NODE_RED_BASE);
         }
         if (!MQTT_URL || !MQTT_TOPIC) {
             setConnectionStatus('failed');
