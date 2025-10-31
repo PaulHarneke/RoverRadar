@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const connectMock = vi.fn();
 
 vi.mock('mqtt', () => ({
+  default: { connect: connectMock },
   connect: connectMock
 }));
 

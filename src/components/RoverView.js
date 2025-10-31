@@ -1,8 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '../utils/telemetryMath';
-const FIELD_DIAMETER_MM = 10000;
+// Radar Field Durchmesser in mm (Radius 8m => Durchmesser 16m)
+const FIELD_DIAMETER_MM = 16000; // vorher 10_000
 const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;
-const TAG_MARKER_RADIUS = 8;
+const TAG_MARKER_RADIUS = 150;
 // Radar ring steps (fractions of FIELD_RADIUS_MM)
 const RANGE_RING_STEPS = [0.25, 0.5, 0.75, 1];
 // Cardinal / intercardinal angle guides (degrees)

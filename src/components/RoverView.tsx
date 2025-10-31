@@ -1,9 +1,10 @@
 import type { TelemetryMessage } from '../context/AppState';
 import { calculateAngleLabel, calculateDistanceLabel, polarToCartesian } from '../utils/telemetryMath';
 
-const FIELD_DIAMETER_MM = 10_000;
+// Radar Field Durchmesser in mm (Radius 8m => Durchmesser 16m)
+const FIELD_DIAMETER_MM = 16_000; // vorher 10_000
 const FIELD_RADIUS_MM = FIELD_DIAMETER_MM / 2;
-const TAG_MARKER_RADIUS = 14;
+const TAG_MARKER_RADIUS = 100;
 // Radar ring steps (fractions of FIELD_RADIUS_MM)
 const RANGE_RING_STEPS: number[] = [0.25, 0.5, 0.75, 1];
 // Cardinal / intercardinal angle guides (degrees)
