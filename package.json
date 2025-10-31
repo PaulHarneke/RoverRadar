@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:https": "node scripts/ensure-dev-cert.mjs && VITE_HTTPS=1 VITE_SSL_KEY=cert/dev.key VITE_SSL_CERT=cert/dev.crt vite",
+  "dev:https": "node scripts/ensure-dev-cert.mjs && cross-env VITE_HTTPS=1 VITE_SSL_KEY=cert/dev.key VITE_SSL_CERT=cert/dev.crt vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
@@ -26,6 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.14.1",
     "@vitejs/plugin-react": "^4.3.0",
+    "cross-env": "^10.1.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react-hooks": "^4.6.2",
