@@ -49,6 +49,78 @@ interface ProviderProps {
   children: ReactNode;
 }
 
+const CONNECTION_STATUS_VALUES: readonly ConnectionStatus[] = [
+  'disconnected',
+  'connecting',
+  'connected',
+  'reconnecting',
+  'failed'
+];
+
+type TelemetryLike = {
+  timestamp?: unknown;
+  tag?: {
+    distance_mm?: unknown;
+    angle_deg?: unknown;
+  } | null;
+  drivetrain?: {
+    front_left_axis_mm_per_s?: unknown;
+    front_right_axis_mm_per_s?: unknown;
+  } | null;
+};
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+function normalizeTimestamp(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim() !== '') {
+    return value;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value).toISOString();
+  }
+  return null;
+}
+
+function normalizeTelemetry(candidate: unknown): TelemetryMessage | null {
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+
+  const value = candidate as TelemetryLike;
+  const timestamp = normalizeTimestamp(value.timestamp) ?? new Date().toISOString();
+  const distance = toFiniteNumber(value.tag?.distance_mm);
+  const angle = toFiniteNumber(value.tag?.angle_deg);
+  const frontLeft = toFiniteNumber(value.drivetrain?.front_left_axis_mm_per_s);
+  const frontRight = toFiniteNumber(value.drivetrain?.front_right_axis_mm_per_s);
+
+  if (distance === null || angle === null || frontLeft === null || frontRight === null) {
+    return null;
+  }
+
+  return {
+    timestamp,
+    tag: {
+      distance_mm: distance,
+      angle_deg: angle
+    },
+    drivetrain: {
+      front_left_axis_mm_per_s: frontLeft,
+      front_right_axis_mm_per_s: frontRight
+    }
+  };
+}
+
 export function AppStateProvider({ children }: ProviderProps) {
   const [telemetry, setTelemetry] = useState<TelemetryMessage | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
@@ -56,6 +128,19 @@ export function AppStateProvider({ children }: ProviderProps) {
   const [scale, setScaleState] = useState<number>(DEFAULT_SCALE);
   const [embed] = useState(() => new URLSearchParams(window.location.search).get('embed') === '1');
   const [, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    if (!embed) {
+      return;
+    }
+
+    const targetOrigins = ALLOWED_ORIGINS && ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : ['*'];
+    const message = { type: 'rover-radar:ready' as const };
+
+    for (const origin of targetOrigins) {
+      window.parent.postMessage(message, origin);
+    }
+  }, [embed]);
 
   useEffect(() => {
     document.body.classList.toggle('dark', theme === 'dark');
@@ -70,7 +155,9 @@ export function AppStateProvider({ children }: ProviderProps) {
     }
 
     if (!MQTT_URL || !MQTT_TOPIC) {
-      setConnectionStatus('failed');
+      if (!embed) {
+        setConnectionStatus('failed');
+      }
       return;
     }
 
@@ -90,7 +177,7 @@ export function AppStateProvider({ children }: ProviderProps) {
     return () => {
       mqtt.disconnect();
     };
-  }, []);
+  }, [embed]);
 
   useEffect(() => {
     if (!HTTP_POLL_URL) {
@@ -140,6 +227,23 @@ export function AppStateProvider({ children }: ProviderProps) {
 
       if ('forceRedraw' in event.data) {
         setRefreshTick((tick: number) => tick + 1);
+      }
+
+      if ('telemetry' in event.data) {
+        const nextTelemetry = normalizeTelemetry(event.data.telemetry);
+        if (nextTelemetry) {
+          setTelemetry(nextTelemetry);
+        }
+      }
+
+      if ('connectionStatus' in event.data) {
+        const nextStatus = event.data.connectionStatus;
+        if (
+          typeof nextStatus === 'string' &&
+          (CONNECTION_STATUS_VALUES as readonly string[]).includes(nextStatus)
+        ) {
+          setConnectionStatus(nextStatus as ConnectionStatus);
+        }
       }
     };
 

@@ -9,6 +9,7 @@ const MIN_SCALE = Number(import.meta.env.VITE_MIN_SCALE_MM_PER_PX ?? '0.5');
 const MAX_SCALE = Number(import.meta.env.VITE_MAX_SCALE_MM_PER_PX ?? '5');
 const MQTT_URL = import.meta.env.VITE_MQTT_WS_URL;
 const MQTT_TOPIC = import.meta.env.VITE_MQTT_TOPIC;
+// If explicit poll URL not provided, derive from Node-RED base + default path
 const NODE_RED_BASE = import.meta.env.VITE_NODE_RED_BASE_URL;
 const HTTP_POLL_URL = import.meta.env.VITE_HTTP_POLL_URL ?? (NODE_RED_BASE ? `${NODE_RED_BASE.replace(/\/$/, '')}/uwb/rover/telemetry` : undefined);
 const HTTP_POLL_INTERVAL_MS = Number(import.meta.env.VITE_HTTP_POLL_INTERVAL_MS ?? '250');
@@ -16,6 +17,59 @@ const ALLOWED_ORIGINS = import.meta.env.VITE_IFRAME_ALLOWED_ORIGINS
     ?.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+const CONNECTION_STATUS_VALUES = [
+    'disconnected',
+    'connecting',
+    'connected',
+    'reconnecting',
+    'failed'
+];
+function toFiniteNumber(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+    }
+    if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed)) {
+            return parsed;
+        }
+    }
+    return null;
+}
+function normalizeTimestamp(value) {
+    if (typeof value === 'string' && value.trim() !== '') {
+        return value;
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return new Date(value).toISOString();
+    }
+    return null;
+}
+function normalizeTelemetry(candidate) {
+    if (!candidate || typeof candidate !== 'object') {
+        return null;
+    }
+    const value = candidate;
+    const timestamp = normalizeTimestamp(value.timestamp) ?? new Date().toISOString();
+    const distance = toFiniteNumber(value.tag?.distance_mm);
+    const angle = toFiniteNumber(value.tag?.angle_deg);
+    const frontLeft = toFiniteNumber(value.drivetrain?.front_left_axis_mm_per_s);
+    const frontRight = toFiniteNumber(value.drivetrain?.front_right_axis_mm_per_s);
+    if (distance === null || angle === null || frontLeft === null || frontRight === null) {
+        return null;
+    }
+    return {
+        timestamp,
+        tag: {
+            distance_mm: distance,
+            angle_deg: angle
+        },
+        drivetrain: {
+            front_left_axis_mm_per_s: frontLeft,
+            front_right_axis_mm_per_s: frontRight
+        }
+    };
+}
 export function AppStateProvider({ children }) {
     const [telemetry, setTelemetry] = useState(null);
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
@@ -23,6 +77,16 @@ export function AppStateProvider({ children }) {
     const [scale, setScaleState] = useState(DEFAULT_SCALE);
     const [embed] = useState(() => new URLSearchParams(window.location.search).get('embed') === '1');
     const [, setRefreshTick] = useState(0);
+    useEffect(() => {
+        if (!embed) {
+            return;
+        }
+        const targetOrigins = ALLOWED_ORIGINS && ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : ['*'];
+        const message = { type: 'rover-radar:ready' };
+        for (const origin of targetOrigins) {
+            window.parent.postMessage(message, origin);
+        }
+    }, [embed]);
     useEffect(() => {
         document.body.classList.toggle('dark', theme === 'dark');
     }, [theme]);
@@ -34,7 +98,9 @@ export function AppStateProvider({ children }) {
             console.log('[DEV] Node-RED Base:', NODE_RED_BASE);
         }
         if (!MQTT_URL || !MQTT_TOPIC) {
-            setConnectionStatus('failed');
+            if (!embed) {
+                setConnectionStatus('failed');
+            }
             return;
         }
         const mqtt = createTelemetryMqttClient({
@@ -51,7 +117,7 @@ export function AppStateProvider({ children }) {
         return () => {
             mqtt.disconnect();
         };
-    }, []);
+    }, [embed]);
     useEffect(() => {
         if (!HTTP_POLL_URL) {
             return;
@@ -92,6 +158,19 @@ export function AppStateProvider({ children }) {
             }
             if ('forceRedraw' in event.data) {
                 setRefreshTick((tick) => tick + 1);
+            }
+            if ('telemetry' in event.data) {
+                const nextTelemetry = normalizeTelemetry(event.data.telemetry);
+                if (nextTelemetry) {
+                    setTelemetry(nextTelemetry);
+                }
+            }
+            if ('connectionStatus' in event.data) {
+                const nextStatus = event.data.connectionStatus;
+                if (typeof nextStatus === 'string' &&
+                    CONNECTION_STATUS_VALUES.includes(nextStatus)) {
+                    setConnectionStatus(nextStatus);
+                }
             }
         };
         window.addEventListener('message', handler);
