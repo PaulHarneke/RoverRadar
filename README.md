@@ -11,6 +11,34 @@ A Vite + React TypeScript web application that renders live UWB telemetry for an
 - Embed mode (`?embed=1`) for minimal UI and programmatic control via `window.postMessage`.
 - Responsive layout optimised for HMI displays without external UI frameworks.
 
+## Iframe-Einbettung & Datenaustausch
+
+Die Anwendung kann mit `?embed=1` in beliebige Dashboards (z. B. Node-RED Dashboard) als `<iframe>` eingebunden werden. Damit ein Host-System die Telemetriedaten seiner Node-RED-Instanz an den iframe übergeben kann, existiert ein kleines `postMessage`-Protokoll:
+
+1. Der iframe signalisiert seine Bereitschaft nach dem Laden mit einer `window.parent.postMessage({ type: 'rover-radar:ready' }, origin)` Nachricht an alle in `VITE_IFRAME_ALLOWED_ORIGINS` definierten Ursprünge (oder `*`, falls leer).
+2. Das Host-System kann anschließend Telemetriedaten und optional den aktuellen Verbindungsstatus an den iframe senden:
+
+   ```js
+   iframe.contentWindow?.postMessage(
+     {
+       telemetry: {
+         timestamp: new Date().toISOString(),
+         tag: { distance_mm: 2530.4, angle_deg: 37.8 },
+         drivetrain: {
+           front_left_axis_mm_per_s: 220,
+           front_right_axis_mm_per_s: 210
+         }
+       },
+       connectionStatus: 'connected'
+     },
+     'https://deine-node-red-instanz.example'
+   );
+   ```
+
+   Eingehende Werte werden geprüft und nur bei vollständigen, numerischen Feldern übernommen. So können beispielsweise auch entfernte PCs die Visualisierung anzeigen, während die Daten weiterhin von der Ziel-Node-RED auf dem Host stammen.
+
+> **Wichtig:** Hinterlege den Ursprung deines Dashboards in `VITE_IFRAME_ALLOWED_ORIGINS`, damit Nachrichten vom Host akzeptiert werden.
+
 ## Getting Started
 
 ### Prerequisites
