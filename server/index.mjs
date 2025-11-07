@@ -1,4 +1,5 @@
 import http from 'node:http';
+import https from 'node:https';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,41 @@ const serveStaticAssets = !parseBoolean(process.env.SERVER_DISABLE_STATIC, false
 if (!serveStaticAssets) {
   console.log('[server] Static file serving disabled (SERVER_DISABLE_STATIC=1). Only API endpoints are available.');
 }
+
+const enableHttps = parseBoolean(process.env.SERVER_HTTPS ?? process.env.SERVER_USE_HTTPS, false);
+const tlsKeyPath = process.env.SERVER_TLS_KEY ?? path.join(baseDir, 'cert', 'dev.key');
+const tlsCertPath = process.env.SERVER_TLS_CERT ?? path.join(baseDir, 'cert', 'dev.crt');
+const tlsCaPath = process.env.SERVER_TLS_CA;
+const tlsPassphrase = process.env.SERVER_TLS_PASSPHRASE;
+
+const corsOriginsEnv = process.env.SERVER_CORS_ORIGIN ?? '*';
+const corsAllowedOrigins = corsOriginsEnv
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
+const corsAllowMethods = (() => {
+  const methodsEnv = process.env.SERVER_CORS_ALLOW_METHODS ?? 'GET,POST';
+  const methods = methodsEnv
+    .split(',')
+    .map((method) => method.trim().toUpperCase())
+    .filter((method) => method.length > 0);
+  if (!methods.includes('OPTIONS')) {
+    methods.push('OPTIONS');
+  }
+  return methods.join(', ');
+})();
+const corsDefaultAllowedHeaders = (() => {
+  const headersEnv = process.env.SERVER_CORS_ALLOW_HEADERS ?? 'Content-Type';
+  const headers = headersEnv
+    .split(',')
+    .map((header) => header.trim())
+    .filter((header) => header.length > 0);
+  return headers.length > 0 ? headers.join(', ') : 'Content-Type';
+})();
+const corsMaxAgeHeader = (() => {
+  const maxAge = Number(process.env.SERVER_CORS_MAX_AGE ?? '600');
+  return Number.isFinite(maxAge) && maxAge >= 0 ? String(Math.floor(maxAge)) : null;
+})();
 
 const nodeRedBase = process.env.NODE_RED_BASE_URL;
 const nodeRedPath = process.env.NODE_RED_TELEMETRY_PATH ?? '/uwb/rover/telemetry';
@@ -56,20 +92,27 @@ if (nodeRedControlUrl) {
   console.log('[server] Node-RED control forwarding disabled (NODE_RED_HTTP_URL empty).');
 }
 
-const server = http.createServer(async (req, res) => {
+const requestListener = async (req, res) => {
   if (!req.url) {
     res.statusCode = 400;
     res.end('Bad Request');
     return;
   }
 
+  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : undefined;
+
+  if (req.method === 'OPTIONS' && req.url.startsWith('/api/')) {
+    handleCorsPreflight(req, res, requestOrigin);
+    return;
+  }
+
   if (req.url.startsWith('/api/telemetry')) {
-    await handleTelemetryRequest(res);
+    await handleTelemetryRequest(res, requestOrigin);
     return;
   }
 
   if (req.url.startsWith('/api/control')) {
-    await handleControlRequest(req, res);
+    await handleControlRequest(req, res, requestOrigin);
     return;
   }
 
@@ -82,13 +125,15 @@ const server = http.createServer(async (req, res) => {
     }
     return;
   }
-
   res.statusCode = 404;
   res.end('Not Found');
-});
+};
+
+const server = createServer(requestListener);
 
 server.listen(port, () => {
-  console.log(`[server] listening on port ${port}`);
+  const protocol = enableHttps ? 'https' : 'http';
+  console.log(`[server] listening on ${protocol} port ${port}`);
   if (nodeRedUrl) {
     console.log(`[server] proxying Node-RED telemetry from ${nodeRedUrl}`);
   }
@@ -97,7 +142,11 @@ server.listen(port, () => {
   }
 });
 
-async function handleTelemetryRequest(res) {
+async function handleTelemetryRequest(res, requestOrigin) {
+  if (!ensureCors(res, requestOrigin, { json: true })) {
+    return;
+  }
+
   if (!nodeRedUrl) {
     res.statusCode = 503;
     res.setHeader('Content-Type', 'application/json');
@@ -214,7 +263,11 @@ function startTelemetryPolling() {
   });
 }
 
-async function handleControlRequest(req, res) {
+async function handleControlRequest(req, res, requestOrigin) {
+  if (!ensureCors(res, requestOrigin, { json: true })) {
+    return;
+  }
+
   if (req.method === 'GET') {
     handleControlGet(res);
     return;
@@ -226,7 +279,7 @@ async function handleControlRequest(req, res) {
   }
 
   res.statusCode = 405;
-  res.setHeader('Allow', 'GET, POST');
+  res.setHeader('Allow', 'GET, POST, OPTIONS');
   res.end('Method Not Allowed');
 }
 
@@ -323,6 +376,103 @@ function updateControlState(update) {
   scheduleNodeRedPush();
 }
 
+function handleCorsPreflight(req, res, requestOrigin) {
+  if (!ensureCors(res, requestOrigin)) {
+    return;
+  }
+
+  res.statusCode = 204;
+  res.setHeader('Access-Control-Allow-Methods', corsAllowMethods);
+  const requestedHeaders = req.headers['access-control-request-headers'];
+  res.setHeader('Access-Control-Allow-Headers', requestedHeaders ?? corsDefaultAllowedHeaders);
+  if (requestedHeaders) {
+    appendHeaderValue(res, 'Vary', 'Access-Control-Request-Headers');
+  }
+  if (corsMaxAgeHeader) {
+    res.setHeader('Access-Control-Max-Age', corsMaxAgeHeader);
+  }
+  res.end();
+}
+
+function ensureCors(res, requestOrigin, options = {}) {
+  const { json = false } = options;
+  if (applyCorsHeaders(res, requestOrigin)) {
+    return true;
+  }
+
+  res.statusCode = 403;
+  if (json) {
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'CORS origin denied' }));
+  } else {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.end('CORS origin denied');
+  }
+  return false;
+}
+
+function applyCorsHeaders(res, requestOrigin) {
+  const allowedOrigin = resolveCorsOrigin(requestOrigin);
+  if (allowedOrigin === false) {
+    return false;
+  }
+
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    if (allowedOrigin !== '*') {
+      appendHeaderValue(res, 'Vary', 'Origin');
+    }
+  }
+
+  return true;
+}
+
+function resolveCorsOrigin(requestOrigin) {
+  if (corsAllowedOrigins.length === 0) {
+    return '*';
+  }
+
+  if (corsAllowedOrigins.includes('*')) {
+    return '*';
+  }
+
+  if (!requestOrigin) {
+    return null;
+  }
+
+  const normalizedRequestOrigin = normalizeOrigin(requestOrigin);
+  const match = corsAllowedOrigins.find((origin) => normalizeOrigin(origin) === normalizedRequestOrigin);
+  return match ? requestOrigin : false;
+}
+
+function normalizeOrigin(origin) {
+  return origin.replace(/\/$/, '').toLowerCase();
+}
+
+function appendHeaderValue(res, header, value) {
+  const current = res.getHeader(header);
+  if (!current) {
+    res.setHeader(header, value);
+    return;
+  }
+
+  if (Array.isArray(current)) {
+    if (!current.includes(value)) {
+      res.setHeader(header, [...current, value]);
+    }
+    return;
+  }
+
+  const existing = String(current)
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+
+  if (!existing.includes(value)) {
+    res.setHeader(header, `${existing.join(', ')}${existing.length > 0 ? ', ' : ''}${value}`);
+  }
+}
+
 function scheduleNodeRedPush() {
   if (!nodeRedControlUrl || !controlDirty) {
     return;
@@ -357,6 +507,57 @@ function scheduleNodeRedPush() {
     nodeRedPushTimer = null;
     void postToNodeRed();
   }, delay);
+}
+
+function createServer(listener) {
+  if (!enableHttps) {
+    return http.createServer(listener);
+  }
+
+  try {
+    const credentials = loadTlsCredentials();
+    console.log('[server] HTTPS enabled.');
+    return https.createServer(credentials, listener);
+  } catch (error) {
+    console.error('[server] Failed to start HTTPS server:', error);
+    process.exit(1);
+  }
+}
+
+function loadTlsCredentials() {
+  const key = readTlsFile(tlsKeyPath, 'SERVER_TLS_KEY');
+  const cert = readTlsFile(tlsCertPath, 'SERVER_TLS_CERT');
+  const credentials = { key, cert };
+
+  if (tlsCaPath) {
+    credentials.ca = readTlsFile(tlsCaPath, 'SERVER_TLS_CA');
+  }
+  if (tlsPassphrase) {
+    credentials.passphrase = tlsPassphrase;
+  }
+
+  return credentials;
+}
+
+function readTlsFile(filePath, envName) {
+  const resolved = resolveFilePath(filePath);
+  if (!resolved) {
+    throw new Error(`${envName} is not defined`);
+  }
+
+  try {
+    return fs.readFileSync(resolved);
+  } catch (error) {
+    throw new Error(`Unable to read ${envName} at ${resolved}: ${error.message}`);
+  }
+}
+
+function resolveFilePath(filePath) {
+  if (!filePath) {
+    return null;
+  }
+
+  return path.isAbsolute(filePath) ? filePath : path.resolve(baseDir, filePath);
 }
 
 async function postToNodeRed() {
