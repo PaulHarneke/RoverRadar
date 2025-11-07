@@ -80,7 +80,7 @@ Update the values to match your Node-RED setup.
 | --- | --- |
 | `VITE_MQTT_WS_URL` | MQTT broker WebSocket URL exposed by Node-RED |
 | `VITE_MQTT_TOPIC` | Topic broadcasting rover telemetry JSON |
-| `VITE_NODE_RED_BASE_URL` | Basis-URL deiner Node-RED Instanz (z.B. `https://169.254.75.59:1880`) – wird genutzt um einen Standard für `VITE_HTTP_POLL_URL` abzuleiten |
+| `VITE_NODE_RED_BASE_URL` | Basis-URL deiner Node-RED Instanz (z.B. `http://169.254.75.59:1880`) – wird genutzt um einen Standard für `VITE_HTTP_POLL_URL` abzuleiten |
 | `VITE_DEFAULT_SCALE_MM_PER_PX` | Initial scale for the SVG canvas |
 | `VITE_MIN_SCALE_MM_PER_PX` | Minimum scale allowed when adjusting the canvas |
 | `VITE_MAX_SCALE_MM_PER_PX` | Maximum scale allowed when adjusting the canvas |
@@ -98,16 +98,18 @@ Setze/verändere in `.env.development` (Dev) bzw. `.env.production` (Build):
 
 ```bash
 # Beispiel mit deiner angegebenen Node-RED IP
-VITE_NODE_RED_BASE_URL=https://169.254.75.59:1880  # Basis Node-RED URL
+VITE_NODE_RED_BASE_URL=http://169.254.75.59:1880   # Basis Node-RED URL (Standard-Port 1880 ist unverschlüsselt)
 VITE_MQTT_WS_URL=wss://169.254.75.59:9001          # WebSocket MQTT Broker (falls via Reverse Proxy konfiguriert)
 VITE_MQTT_TOPIC=uwb/rover/telemetry               # Telemetrie-Topic
 VITE_MQTT_BACKOFF_INITIAL_MS=500                  # Erster Reconnect-Delay
 VITE_MQTT_BACKOFF_MAX_MS=8000                     # Max. Reconnect-Delay
 # Wenn VITE_HTTP_POLL_URL fehlt, wird automatisch VITE_NODE_RED_BASE_URL + /uwb/rover/telemetry genutzt
-VITE_HTTP_POLL_URL=https://169.254.75.59:1880/uwb/rover/telemetry   # Explizit überschreiben (optional)
+VITE_HTTP_POLL_URL=http://169.254.75.59:1880/uwb/rover/telemetry    # Explizit überschreiben (optional)
 VITE_HTTP_POLL_INTERVAL_MS=250                    # Poll-Intervall in ms
 VITE_IFRAME_ALLOWED_ORIGINS=https://169.254.75.59:1880
 ```
+
+> 💡 **Hinweis:** Node-RED lauscht standardmäßig unverschlüsselt auf Port 1880. Verwende daher `http://` in `VITE_NODE_RED_BASE_URL`, solange du kein eigenes TLS-Zertifikat konfiguriert hast. Der HTTP-Fallback der App versucht bei einem fehlgeschlagenen HTTPS-Abruf automatisch einmal auf HTTP umzuschalten und protokolliert dabei einen entsprechenden Hinweis in der Browser-Konsole.
 
 Wechsel der Modi:
 - Dev: `npm run dev` (lädt `.env.development`)
@@ -211,6 +213,10 @@ Node-RED publishes telemetry in the following JSON structure:
 ```
 
 ## Node-RED Flow Snippet
+
+### Minimaler HTTP-Polling Testflow (ohne MQTT)
+
+Wenn du nur den HTTP-Fallback der Anwendung testen möchtest (z. B. weil kein MQTT-Broker verfügbar ist), kannst du den Flow `node-red/http-telemetry-flow.json` importieren. Er erzeugt alle 500 ms Zufalls-Telemetrie, speichert den letzten Datensatz im Flow-Kontext und liefert ihn ausschließlich über `GET /uwb/rover/telemetry` aus.
 
 ### Beispiel Node-RED Testflow (MQTT + HTTP)
 

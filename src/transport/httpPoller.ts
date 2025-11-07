@@ -11,11 +11,12 @@ export function createHttpPoller(options: HttpPollerOptions) {
 }
 
 class HttpPoller {
-  private readonly url: string;
+  private url: string;
   private readonly intervalMs: number;
   private readonly onData: (message: TelemetryMessage | null) => void;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private aborted = false;
+  private httpsFallbackAttempted = false;
 
   constructor(options: HttpPollerOptions) {
     this.url = options.url;
@@ -51,16 +52,56 @@ class HttpPoller {
 
   private async pollOnce() {
     try {
-      const response = await fetch(this.url, {
-        cache: 'no-store'
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP poll failed: ${response.status}`);
-      }
-      const body = (await response.json()) as TelemetryMessage;
+      const body = await this.fetchTelemetry(this.url);
       this.onData(body);
+      return;
     } catch (error) {
+      if (await this.tryDowngradeToHttp(error)) {
+        return;
+      }
       console.warn('HTTP poll error', error);
     }
+  }
+
+  private async fetchTelemetry(url: string) {
+    const response = await fetch(url, {
+      cache: 'no-store'
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP poll failed: ${response.status}`);
+    }
+    return (await response.json()) as TelemetryMessage;
+  }
+
+  private async tryDowngradeToHttp(error: unknown) {
+    if (this.httpsFallbackAttempted) {
+      return false;
+    }
+
+    if (!(error instanceof TypeError)) {
+      return false;
+    }
+
+    if (!this.url.startsWith('https://')) {
+      return false;
+    }
+
+    this.httpsFallbackAttempted = true;
+    const fallbackUrl = `http://${this.url.slice('https://'.length)}`;
+    console.warn(
+      'HTTPS poll failed, retrying over HTTP. Configure VITE_NODE_RED_BASE_URL with http:// if your Node-RED server does not use TLS.',
+      error
+    );
+
+    try {
+      const body = await this.fetchTelemetry(fallbackUrl);
+      this.url = fallbackUrl;
+      this.onData(body);
+      return true;
+    } catch (fallbackError) {
+      console.warn('HTTP poll error after HTTPS fallback', fallbackError);
+    }
+
+    return false;
   }
 }
