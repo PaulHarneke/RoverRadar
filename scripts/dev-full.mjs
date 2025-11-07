@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import path from 'node:path';
 
 const isWindows = process.platform === 'win32';
 const npmCommand = isWindows ? 'npm.cmd' : 'npm';
 const nodeCommand = process.execPath;
+let certEnsured = false;
 
 const backendEnv = { ...process.env };
 if (!backendEnv.PORT) {
@@ -14,7 +16,11 @@ if (!backendEnv.SERVER_DISABLE_STATIC) {
 }
 const backendPort = backendEnv.PORT;
 
-const telemetryUrl = process.env.VITE_TELEMETRY_API_URL ?? `http://127.0.0.1:${backendPort}/api/telemetry`;
+enableHttpsForBackend(backendEnv);
+
+const backendProtocol = backendEnv.SERVER_HTTPS === '1' ? 'https' : 'http';
+const telemetryUrl =
+  process.env.VITE_TELEMETRY_API_URL ?? `${backendProtocol}://127.0.0.1:${backendPort}/api/telemetry`;
 const httpPollUrl = process.env.VITE_HTTP_POLL_URL ?? telemetryUrl;
 
 const frontendEnv = { ...process.env };
@@ -24,6 +30,8 @@ if (!frontendEnv.VITE_TELEMETRY_API_URL) {
 if (!frontendEnv.VITE_HTTP_POLL_URL) {
   frontendEnv.VITE_HTTP_POLL_URL = httpPollUrl;
 }
+
+enableHttpsForFrontend(frontendEnv);
 
 console.log(`[dev] Backend port: ${backendPort}`);
 console.log(`[dev] Frontend telemetry API: ${frontendEnv.VITE_TELEMETRY_API_URL}`);
@@ -98,3 +106,52 @@ process.once('SIGTERM', () => {
 
 spawnCommand('backend', nodeCommand, ['server/index.mjs'], backendEnv);
 spawnCommand('frontend', npmCommand, ['run', 'dev'], frontendEnv);
+
+function enableHttpsForBackend(env) {
+  if (env.SERVER_HTTPS === '0') {
+    return;
+  }
+
+  const defaultKey = path.resolve('cert', 'dev.key');
+  const defaultCert = path.resolve('cert', 'dev.crt');
+  const shouldEnable = env.SERVER_HTTPS === '1' || env.SERVER_HTTPS === undefined;
+
+  if (!shouldEnable) {
+    return;
+  }
+
+  ensureDevCertificate();
+
+  env.SERVER_HTTPS = '1';
+  env.SERVER_TLS_KEY = env.SERVER_TLS_KEY ?? defaultKey;
+  env.SERVER_TLS_CERT = env.SERVER_TLS_CERT ?? defaultCert;
+}
+
+function enableHttpsForFrontend(env) {
+  const shouldEnable = env.VITE_HTTPS === '1' || env.VITE_HTTPS === undefined;
+  if (!shouldEnable) {
+    return;
+  }
+
+  ensureDevCertificate();
+
+  env.VITE_HTTPS = '1';
+  env.VITE_SSL_KEY = env.VITE_SSL_KEY ?? path.resolve('cert', 'dev.key');
+  env.VITE_SSL_CERT = env.VITE_SSL_CERT ?? path.resolve('cert', 'dev.crt');
+}
+
+function ensureDevCertificate() {
+  if (certEnsured) {
+    return;
+  }
+
+  const result = spawnSync(nodeCommand, ['scripts/ensure-dev-cert.mjs'], {
+    stdio: 'inherit'
+  });
+
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+
+  certEnsured = true;
+}
