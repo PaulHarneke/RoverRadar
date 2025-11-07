@@ -37,7 +37,7 @@ function spawnCommand(name, command, args, env) {
   const child = spawn(command, args, {
     env,
     stdio: 'inherit',
-    shell: false
+    shell: isWindows
   });
 
   children.add(child);
