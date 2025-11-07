@@ -1,0 +1,109 @@
+[
+  {
+    "id": "inj_500ms_http",
+    "type": "inject",
+    "z": "290b97f1.b47728",
+    "name": "Tick 500ms",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "0.5",
+    "once": true,
+    "onceDelay": "0.1",
+    "topic": "",
+    "x": 240,
+    "y": 180,
+    "wires": [
+      [
+        "fn_build_http"
+      ]
+    ]
+  },
+  {
+    "id": "fn_build_http",
+    "type": "function",
+    "z": "290b97f1.b47728",
+    "name": "Build Telemetry",
+    "func": "// Zufallswerte erzeugen\nconst distance = 1500 + Math.random() * 1000;   // 1500..2500 mm\nconst angle = -90 + Math.random() * 180;         // -90..+90°\nconst fl = 180 + Math.random() * 200;            // 180..380 mm/s\nconst fr = 180 + Math.random() * 200;\n\nconst telemetry = {\n  timestamp: new Date().toISOString(),\n  tag: {\n    distance_mm: Number(distance.toFixed(1)),\n    angle_deg: Number(angle.toFixed(1))\n  },\n  drivetrain: {\n    front_left_axis_mm_per_s: Math.round(fl),\n    front_right_axis_mm_per_s: Math.round(fr)\n  }\n};\nflow.set('latestTelemetry', telemetry);\nmsg.payload = telemetry;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 450,
+    "y": 180,
+    "wires": [
+      [
+        "dbg_http"
+      ]
+    ]
+  },
+  {
+    "id": "dbg_http",
+    "type": "debug",
+    "z": "290b97f1.b47728",
+    "name": "Debug Telemetry",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 670,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "http_in_only",
+    "type": "http in",
+    "z": "290b97f1.b47728",
+    "name": "GET /uwb/rover/telemetry",
+    "url": "/uwb/rover/telemetry",
+    "method": "get",
+    "upload": false,
+    "skipBodyParsing": false,
+    "swaggerDoc": "",
+    "x": 190,
+    "y": 280,
+    "wires": [
+      [
+        "fn_latest_http"
+      ]
+    ]
+  },
+  {
+    "id": "fn_latest_http",
+    "type": "function",
+    "z": "290b97f1.b47728",
+    "name": "Read Latest",
+    "func": "const latest = flow.get('latestTelemetry');\nif (!latest) {\n  msg.statusCode = 204; // No Content\n  msg.payload = null;\n  return msg;\n}\nmsg.payload = latest;\nmsg.headers = { 'Cache-Control': 'no-store', 'Content-Type': 'application/json' };\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 490,
+    "y": 280,
+    "wires": [
+      [
+        "http_resp_only"
+      ]
+    ]
+  },
+  {
+    "id": "http_resp_only",
+    "type": "http response",
+    "z": "290b97f1.b47728",
+    "name": "Respond JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 780,
+    "y": 280,
+    "wires": []
+  }
+]
