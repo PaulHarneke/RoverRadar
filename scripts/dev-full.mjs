@@ -19,8 +19,9 @@ const backendPort = backendEnv.PORT;
 enableHttpsForBackend(backendEnv);
 
 const backendProtocol = backendEnv.SERVER_HTTPS === '1' ? 'https' : 'http';
+const loopbackHostname = process.env.DEV_LOOPBACK_HOST ?? 'localhost';
 const telemetryUrl =
-  process.env.VITE_TELEMETRY_API_URL ?? `${backendProtocol}://127.0.0.1:${backendPort}/api/telemetry`;
+  process.env.VITE_TELEMETRY_API_URL ?? `${backendProtocol}://${loopbackHostname}:${backendPort}/api/telemetry`;
 const httpPollUrl = process.env.VITE_HTTP_POLL_URL ?? telemetryUrl;
 
 const frontendEnv = { ...process.env };

@@ -145,7 +145,7 @@ Open http://localhost:5000/ to view the UI. The development server automatically
 npm run dev:full
 ```
 
-Der Befehl startet gleichzeitig den Vite-Entwicklungsserver und den Node.js-Backend-Proxy. Der Proxy lauscht standardmäßig auf Port `5100` (anpassbar über `DEV_BACKEND_PORT` oder `PORT`) und stellt seine API unter `http://127.0.0.1:5100` bereit. Die Frontend-Instanz erhält automatisch `VITE_TELEMETRY_API_URL` (und `VITE_HTTP_POLL_URL`, falls nicht gesetzt), sodass HTTP-Fallback-Abfragen den lokalen Proxy nutzen.
+Der Befehl startet gleichzeitig den Vite-Entwicklungsserver und den Node.js-Backend-Proxy. Der Proxy lauscht standardmäßig auf Port `5100` (anpassbar über `DEV_BACKEND_PORT` oder `PORT`) und stellt seine API unter `https://localhost:5100` bereit, sofern HTTPS aktiv ist. Über die Variable `DEV_LOOPBACK_HOST` kannst du den Hostnamen auf z. B. `127.0.0.1` umstellen (nicht empfohlen, da selbst-signierte Zertifikate sonst Hostname-Warnungen erzeugen). Die Frontend-Instanz erhält automatisch `VITE_TELEMETRY_API_URL` (und `VITE_HTTP_POLL_URL`, falls nicht gesetzt), sodass HTTP-Fallback-Abfragen den lokalen Proxy nutzen.
 
 ### Backend-Proxy & gemeinsamer Datenstand
 
@@ -175,7 +175,8 @@ Das Skript `scripts/ensure-dev-cert.mjs` erzeugt bei Bedarf `cert/dev.key` und `
 Manuell erzeugen:
 
 ```bash
-openssl req -x509 -newkey rsa:2048 -nodes -keyout cert/dev.key -out cert/dev.crt -days 365 -subj "/CN=localhost"
+openssl req -x509 -newkey rsa:2048 -nodes -keyout cert/dev.key -out cert/dev.crt -days 365 \
+  -subj "/CN=localhost" -addext "subjectAltName = DNS:localhost,IP:127.0.0.1,IP:::1"
 export VITE_HTTPS=1
 export VITE_SSL_KEY=cert/dev.key
 export VITE_SSL_CERT=cert/dev.crt
