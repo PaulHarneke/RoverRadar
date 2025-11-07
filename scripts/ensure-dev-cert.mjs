@@ -14,6 +14,7 @@ import crypto from 'crypto';
 const certDir = path.resolve('cert');
 const keyPath = path.join(certDir, 'dev.key');
 const crtPath = path.join(certDir, 'dev.crt');
+const opensslConfigPath = path.join(certDir, '.dev-cert.openssl.cnf');
 
 // Hinweis: Bekannte Probleme mit Node >=22 bei TLS + WebSocket Upgrade ("shouldUpgradeCallback" Fehler).
 // Empfehlung: Für lokale Entwicklung Node 18 oder 20 LTS nutzen, falls HTTPS/HMR Probleme auftreten.
@@ -143,8 +144,34 @@ function createWithOpenssl() {
       log('mkcert fehlgeschlagen, fallback auf self-signed openssl.');
     }
   }
-  execSync(`openssl req -x509 -newkey rsa:2048 -nodes -keyout ${keyPath} -out ${crtPath} -days 365 -subj "/CN=localhost"`, { stdio: 'inherit' });
+  writeOpenSslConfig();
+  execSync(
+    `openssl req -config ${opensslConfigPath} -x509 -newkey rsa:2048 -nodes -keyout ${keyPath} -out ${crtPath} -days 365`,
+    { stdio: 'inherit' }
+  );
   log('Self-signed Zertifikat via openssl erstellt.');
+}
+
+function writeOpenSslConfig() {
+  const config = `# Auto-generierte Konfiguration für Dev-Zertifikat\n` +
+`[req]\n` +
+`default_bits = 2048\n` +
+`prompt = no\n` +
+`default_md = sha256\n` +
+`distinguished_name = dn\n` +
+`x509_extensions = v3_req\n` +
+`\n` +
+`[dn]\n` +
+`CN = localhost\n` +
+`\n` +
+`[v3_req]\n` +
+`subjectAltName = @alt_names\n` +
+`\n` +
+`[alt_names]\n` +
+`DNS.1 = localhost\n` +
+`IP.1 = 127.0.0.1\n` +
+`IP.2 = ::1\n`;
+  writeFileSync(opensslConfigPath, config);
 }
 
 function createSelfSignedFallback() {

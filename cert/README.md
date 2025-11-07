@@ -5,7 +5,8 @@ Diese Dateien dienen nur lokal.
 ## Self-Signed Zertifikat erzeugen
 
 ```bash
-openssl req -x509 -newkey rsa:2048 -nodes -keyout dev.key -out dev.crt -days 365 -subj "/CN=localhost"
+openssl req -x509 -newkey rsa:2048 -nodes -keyout dev.key -out dev.crt -days 365 \
+  -subj "/CN=localhost" -addext "subjectAltName = DNS:localhost,IP:127.0.0.1,IP:::1"
 ```
 
 Danach `VITE_HTTPS=1` setzen, optional Pfade:
