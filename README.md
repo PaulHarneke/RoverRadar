@@ -80,7 +80,8 @@ Update the values to match your Node-RED setup.
 | --- | --- |
 | `VITE_MQTT_WS_URL` | MQTT broker WebSocket URL exposed by Node-RED |
 | `VITE_MQTT_TOPIC` | Topic broadcasting rover telemetry JSON |
-| `VITE_NODE_RED_BASE_URL` | Basis-URL deiner Node-RED Instanz (z.B. `http://169.254.75.59:1880`) – wird genutzt um einen Standard für `VITE_HTTP_POLL_URL` abzuleiten |
+| `VITE_TELEMETRY_API_URL` | Optional override for the backend endpoint that serves cached telemetry (defaults to `/api/telemetry`) |
+| `VITE_NODE_RED_BASE_URL` | (Optional) Basis-URL deiner Node-RED Instanz für Legacy-Direktabruf – dient als Fallback, falls kein Server-Endpoint konfiguriert ist |
 | `VITE_DEFAULT_SCALE_MM_PER_PX` | Initial scale for the SVG canvas |
 | `VITE_MIN_SCALE_MM_PER_PX` | Minimum scale allowed when adjusting the canvas |
 | `VITE_MAX_SCALE_MM_PER_PX` | Maximum scale allowed when adjusting the canvas |
@@ -89,27 +90,37 @@ Update the values to match your Node-RED setup.
 | `VITE_SPEED_DANGER_MM_PER_S` | Danger threshold for front axle speeds |
 | `VITE_MQTT_BACKOFF_INITIAL_MS` | Initial reconnect delay for MQTT |
 | `VITE_MQTT_BACKOFF_MAX_MS` | Maximum reconnect delay for MQTT |
-| `VITE_HTTP_POLL_URL` | (Optional) Node-RED HTTP endpoint for telemetry polling |
+| `VITE_HTTP_POLL_URL` | (Optional) Override for the HTTP polling endpoint (otherwise `/api/telemetry` is used) |
 | `VITE_HTTP_POLL_INTERVAL_MS` | Polling interval when HTTP fallback is enabled |
 
 ### Node-RED Kommunikation konfigurieren
 
-Setze/verändere in `.env.development` (Dev) bzw. `.env.production` (Build):
+1. **Serverseitig** (für `npm run serve` oder dein eigenes Hosting): Lege Umgebungsvariablen fest, damit der Backend-Proxy die Node-RED-Daten abholt.
 
-```bash
-# Beispiel mit deiner angegebenen Node-RED IP
-VITE_NODE_RED_BASE_URL=http://169.254.75.59:1880   # Basis Node-RED URL (Standard-Port 1880 ist unverschlüsselt)
-VITE_MQTT_WS_URL=wss://169.254.75.59:9001          # WebSocket MQTT Broker (falls via Reverse Proxy konfiguriert)
-VITE_MQTT_TOPIC=uwb/rover/telemetry               # Telemetrie-Topic
-VITE_MQTT_BACKOFF_INITIAL_MS=500                  # Erster Reconnect-Delay
-VITE_MQTT_BACKOFF_MAX_MS=8000                     # Max. Reconnect-Delay
-# Wenn VITE_HTTP_POLL_URL fehlt, wird automatisch VITE_NODE_RED_BASE_URL + /uwb/rover/telemetry genutzt
-VITE_HTTP_POLL_URL=http://169.254.75.59:1880/uwb/rover/telemetry    # Explizit überschreiben (optional)
-VITE_HTTP_POLL_INTERVAL_MS=250                    # Poll-Intervall in ms
-VITE_IFRAME_ALLOWED_ORIGINS=https://169.254.75.59:1880
-```
+   ```bash
+   # Beispiel mit deiner angegebenen Node-RED IP
+   NODE_RED_BASE_URL=http://169.254.75.59:1880      # Node-RED läuft typischerweise unverschlüsselt auf Port 1880
+   NODE_RED_TELEMETRY_PATH=/uwb/rover/telemetry     # Optional, Standard ist /uwb/rover/telemetry
+   TELEMETRY_POLL_INTERVAL_MS=250                   # Optional: Abrufintervall (Standard 500 ms)
+   PORT=5000                                       # Optional: Port für den Webserver
+   ```
 
-> 💡 **Hinweis:** Node-RED lauscht standardmäßig unverschlüsselt auf Port 1880. Verwende daher `http://` in `VITE_NODE_RED_BASE_URL`, solange du kein eigenes TLS-Zertifikat konfiguriert hast. Der HTTP-Fallback der App versucht bei einem fehlgeschlagenen HTTPS-Abruf automatisch einmal auf HTTP umzuschalten und protokolliert dabei einen entsprechenden Hinweis in der Browser-Konsole.
+   Der Server holt zyklisch die Daten von Node-RED ab, stellt sie unter `/api/telemetry` bereit und alle Radar-Clients sehen dadurch denselben Stand – unabhängig davon, auf welchem Rechner der Browser läuft.
+
+2. **Clientseitig** (React-App): Hinterlege weiterhin MQTT-Informationen oder passe das Verhalten über `.env.*` Dateien an.
+
+   ```bash
+   VITE_MQTT_WS_URL=wss://169.254.75.59:9001          # WebSocket MQTT Broker (optional)
+   VITE_MQTT_TOPIC=uwb/rover/telemetry               # Telemetrie-Topic
+   VITE_MQTT_BACKOFF_INITIAL_MS=500                  # Erster Reconnect-Delay
+   VITE_MQTT_BACKOFF_MAX_MS=8000                     # Max. Reconnect-Delay
+   VITE_HTTP_POLL_INTERVAL_MS=250                    # Poll-Intervall in ms
+   VITE_IFRAME_ALLOWED_ORIGINS=https://169.254.75.59:1880
+   ```
+
+   Der HTTP-Fallback nutzt nun standardmäßig `/api/telemetry`. Du kannst über `VITE_TELEMETRY_API_URL` bzw. `VITE_HTTP_POLL_URL` einen anderen Server-Endpunkt setzen.
+
+> 💡 **Hinweis:** Node-RED lauscht standardmäßig unverschlüsselt auf Port 1880. Verwende daher `http://` in `NODE_RED_BASE_URL`, solange du kein eigenes TLS-Zertifikat konfiguriert hast. Der HTTP-Proxy im Server versucht nicht automatisch auf HTTPS zu wechseln.
 
 Wechsel der Modi:
 - Dev: `npm run dev` (lädt `.env.development`)
@@ -124,6 +135,17 @@ npm run dev
 ```
 
 Open http://localhost:5000/ to view the UI. The development server automatically reloads when files change.
+
+### Backend-Proxy & gemeinsamer Datenstand
+
+Für den synchronisierten Betrieb mehrerer Radar-Clients steht ein schlanker Node.js-Server zur Verfügung. Er holt die Telemetrie von Node-RED und stellt sie allen Browsern via `/api/telemetry` bereit.
+
+```bash
+npm run build            # Einmalig Assets erzeugen
+NODE_RED_BASE_URL=http://169.254.75.59:1880 npm run serve
+```
+
+Der Prozess nutzt ausschließlich serverseitige Kommunikation mit Node-RED. Egal, wo die Weboberfläche geöffnet wird – alle Instanzen greifen auf denselben Server-Endpunkt zu und zeigen somit identische Daten.
 
 ### HTTPS im Development
 

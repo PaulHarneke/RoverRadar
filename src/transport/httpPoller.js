@@ -70,6 +70,7 @@ class HttpPoller {
         try {
             const body = await this.fetchTelemetry(this.url);
             this.onData(body);
+            return;
         }
         catch (error) {
             if (await this.tryDowngradeToHttp(error)) {
