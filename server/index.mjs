@@ -8,6 +8,11 @@ const baseDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distDir = path.join(baseDir, 'dist');
 const indexFile = path.join(distDir, 'index.html');
 
+const serveStaticAssets = !parseBoolean(process.env.SERVER_DISABLE_STATIC, false);
+if (!serveStaticAssets) {
+  console.log('[server] Static file serving disabled (SERVER_DISABLE_STATIC=1). Only API endpoints are available.');
+}
+
 const nodeRedBase = process.env.NODE_RED_BASE_URL;
 const nodeRedPath = process.env.NODE_RED_TELEMETRY_PATH ?? '/uwb/rover/telemetry';
 const nodeRedUrl = nodeRedBase ? new URL(nodeRedPath, ensureTrailingSlash(nodeRedBase)).toString() : null;
@@ -69,7 +74,12 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET') {
-    await serveStaticFile(req.url, res);
+    if (serveStaticAssets) {
+      await serveStaticFile(req.url, res);
+    } else {
+      res.statusCode = 404;
+      res.end('Not Found');
+    }
     return;
   }
 
@@ -117,6 +127,12 @@ async function handleTelemetryRequest(res) {
 }
 
 async function serveStaticFile(requestPath, res) {
+  if (!serveStaticAssets) {
+    res.statusCode = 404;
+    res.end('Not Found');
+    return;
+  }
+
   if (!fs.existsSync(distDir)) {
     res.statusCode = 404;
     res.end('Static assets not built. Run `npm run build` first.');
@@ -391,6 +407,27 @@ async function postToNodeRed() {
       scheduleNodeRedPush();
     }
   }
+}
+
+function parseBoolean(value, defaultValue) {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === '') {
+    return defaultValue;
+  }
+
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  return defaultValue;
 }
 
 function getContentType(filePath) {

@@ -139,6 +139,14 @@ npm run dev
 
 Open http://localhost:5000/ to view the UI. The development server automatically reloads when files change.
 
+### Frontend & Backend gemeinsam starten
+
+```bash
+npm run dev:full
+```
+
+Der Befehl startet gleichzeitig den Vite-Entwicklungsserver und den Node.js-Backend-Proxy. Der Proxy lauscht standardmäßig auf Port `5100` (anpassbar über `DEV_BACKEND_PORT` oder `PORT`) und stellt seine API unter `http://127.0.0.1:5100` bereit. Die Frontend-Instanz erhält automatisch `VITE_TELEMETRY_API_URL` (und `VITE_HTTP_POLL_URL`, falls nicht gesetzt), sodass HTTP-Fallback-Abfragen den lokalen Proxy nutzen.
+
 ### Backend-Proxy & gemeinsamer Datenstand
 
 Für den synchronisierten Betrieb mehrerer Radar-Clients steht ein schlanker Node.js-Server zur Verfügung. Er holt die Telemetrie von Node-RED und stellt sie allen Browsern via `/api/telemetry` bereit.
