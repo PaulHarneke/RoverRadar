@@ -81,7 +81,6 @@ Update the values to match your Node-RED setup.
 | `VITE_MQTT_WS_URL` | MQTT broker WebSocket URL exposed by Node-RED |
 | `VITE_MQTT_TOPIC` | Topic broadcasting rover telemetry JSON |
 | `VITE_TELEMETRY_API_URL` | Optional override for the backend endpoint that serves cached telemetry (defaults to `/api/telemetry`) |
-| `VITE_NODE_RED_BASE_URL` | (Optional) Basis-URL deiner Node-RED Instanz für Legacy-Direktabruf – dient als Fallback, falls kein Server-Endpoint konfiguriert ist |
 | `VITE_DEFAULT_SCALE_MM_PER_PX` | Initial scale for the SVG canvas |
 | `VITE_MIN_SCALE_MM_PER_PX` | Minimum scale allowed when adjusting the canvas |
 | `VITE_MAX_SCALE_MM_PER_PX` | Maximum scale allowed when adjusting the canvas |
@@ -101,11 +100,15 @@ Update the values to match your Node-RED setup.
    # Beispiel mit deiner angegebenen Node-RED IP
    NODE_RED_BASE_URL=http://169.254.75.59:1880      # Node-RED läuft typischerweise unverschlüsselt auf Port 1880
    NODE_RED_TELEMETRY_PATH=/uwb/rover/telemetry     # Optional, Standard ist /uwb/rover/telemetry
+   NODE_RED_HTTP_URL=http://127.0.0.1:1880/joystick # Optional: Weiterleitung der Bedienzustände an Node-RED aktivieren
+   NODE_RED_PUSH_MIN_INTERVAL_MS=50                 # Optional: Mindestabstand zwischen POSTs (Standard 50 ms)
+   NODE_RED_RETRY_COOLDOWN_MS=10000                 # Optional: Sperrzeit nach fehlgeschlagenem POST (Standard 10 s)
+   NODE_RED_HTTP_TIMEOUT_MS=5000                    # Optional: Timeout für POST-Requests (Standard 5 s)
    TELEMETRY_POLL_INTERVAL_MS=250                   # Optional: Abrufintervall (Standard 500 ms)
    PORT=5000                                       # Optional: Port für den Webserver
    ```
 
-   Der Server holt zyklisch die Daten von Node-RED ab, stellt sie unter `/api/telemetry` bereit und alle Radar-Clients sehen dadurch denselben Stand – unabhängig davon, auf welchem Rechner der Browser läuft.
+   Der Server holt zyklisch die Daten von Node-RED ab, stellt sie unter `/api/telemetry` bereit und alle Radar-Clients sehen dadurch denselben Stand – unabhängig davon, auf welchem Rechner der Browser läuft. Zusätzlich kann er den aktuellen Bedienzustand (Modus und Joystickwerte) entgegennehmen und über `NODE_RED_HTTP_URL` an Node-RED weiterreichen. Ohne gesetzte URL bleibt die Weiterleitung deaktiviert.
 
 2. **Clientseitig** (React-App): Hinterlege weiterhin MQTT-Informationen oder passe das Verhalten über `.env.*` Dateien an.
 
@@ -120,7 +123,7 @@ Update the values to match your Node-RED setup.
 
    Der HTTP-Fallback nutzt nun standardmäßig `/api/telemetry`. Du kannst über `VITE_TELEMETRY_API_URL` bzw. `VITE_HTTP_POLL_URL` einen anderen Server-Endpunkt setzen.
 
-> 💡 **Hinweis:** Node-RED lauscht standardmäßig unverschlüsselt auf Port 1880. Verwende daher `http://` in `NODE_RED_BASE_URL`, solange du kein eigenes TLS-Zertifikat konfiguriert hast. Der HTTP-Proxy im Server versucht nicht automatisch auf HTTPS zu wechseln.
+> 💡 **Hinweis:** Node-RED lauscht standardmäßig unverschlüsselt auf Port 1880. Verwende daher `http://` in `NODE_RED_BASE_URL` bzw. `NODE_RED_HTTP_URL`, solange du kein eigenes TLS-Zertifikat konfiguriert hast. Der HTTP-Proxy im Server versucht nicht automatisch auf HTTPS zu wechseln.
 
 Wechsel der Modi:
 - Dev: `npm run dev` (lädt `.env.development`)
@@ -146,6 +149,8 @@ NODE_RED_BASE_URL=http://169.254.75.59:1880 npm run serve
 ```
 
 Der Prozess nutzt ausschließlich serverseitige Kommunikation mit Node-RED. Egal, wo die Weboberfläche geöffnet wird – alle Instanzen greifen auf denselben Server-Endpunkt zu und zeigen somit identische Daten.
+
+Zusätzlich nimmt der Server Steuerkommandos unter `/api/control` entgegen. Ein `POST` erwartet ein JSON-Objekt mit `mode` (String) und/oder `stick` (`{ x, y }`), aktualisiert den serverseitigen Zustand und stößt – gedrosselt auf mindestens 50 ms Abstand – einen HTTP-POST an `NODE_RED_HTTP_URL` an. Ein `GET` liefert den zuletzt bekannten Zustand. Fehlerhafte Antworten lösen eine Sperrfrist (`NODE_RED_RETRY_COOLDOWN_MS`) aus, nach deren Ablauf automatisch ein neuer Versuch startet.
 
 ### HTTPS im Development
 
