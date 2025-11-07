@@ -37,12 +37,7 @@ const MAX_SCALE = Number(import.meta.env.VITE_MAX_SCALE_MM_PER_PX ?? '5');
 const MQTT_URL = import.meta.env.VITE_MQTT_WS_URL as string | undefined;
 const MQTT_TOPIC = import.meta.env.VITE_MQTT_TOPIC as string | undefined;
 const TELEMETRY_API_URL = (import.meta.env.VITE_TELEMETRY_API_URL as string | undefined) ?? '/api/telemetry';
-// If explicit poll URL not provided, derive from API override, then Node-RED base + default path
-const NODE_RED_BASE = import.meta.env.VITE_NODE_RED_BASE_URL as string | undefined;
-const HTTP_POLL_URL =
-  (import.meta.env.VITE_HTTP_POLL_URL as string | undefined) ??
-  TELEMETRY_API_URL ??
-  (NODE_RED_BASE ? `${NODE_RED_BASE.replace(/\/$/, '')}/uwb/rover/telemetry` : undefined);
+const HTTP_POLL_URL = (import.meta.env.VITE_HTTP_POLL_URL as string | undefined) ?? TELEMETRY_API_URL;
 const HTTP_POLL_INTERVAL_MS = Number(import.meta.env.VITE_HTTP_POLL_INTERVAL_MS ?? '250');
 const ALLOWED_ORIGINS = (import.meta.env.VITE_IFRAME_ALLOWED_ORIGINS as string | undefined)
   ?.split(',')
@@ -156,7 +151,6 @@ export function AppStateProvider({ children }: ProviderProps) {
       console.log('[DEV] MQTT Topic:', MQTT_TOPIC);
       console.log('[DEV] HTTP Fallback:', HTTP_POLL_URL);
       console.log('[DEV] Telemetry API:', TELEMETRY_API_URL);
-      console.log('[DEV] Node-RED Base:', NODE_RED_BASE);
     }
 
     if (!MQTT_URL || !MQTT_TOPIC) {
